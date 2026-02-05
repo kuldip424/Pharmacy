@@ -1,0 +1,104 @@
+{% extends 'adminnavbar.html' %}
+
+{% block content %}
+
+
+    <div class="container-fluid">
+        <h1 class="mt-4">Alerts</h1>
+            <ul class="nav nav-tabs"  role="tablist">
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active"
+                            id="low-stock-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#low-stock"
+                            type="button"
+                            role="tab">
+                        Low Stock Alerts
+                    </button>
+                </li>
+
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link"
+                            id="expired-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#expired"
+                            type="button"
+                            role="tab">
+                        Expired Drugs
+                    </button>
+                </li>
+
+            </ul>
+
+        <div class="tab-content mt-3">
+             Bootstrap is working
+            <div class="tab-pane fade show active" id="low-stock" role="tabpanel" aria-labelledby="low-stock-tab">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Drug Name</th>
+                            <th>Current Stock</th>
+                            <th>Minimum Stock</th>
+                            <th>Supplier</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lowStockTableBody">
+                        <!-- Low stock alerts will be loaded here -->
+                        
+                        {% for i in low_stock %}
+                            
+                        
+                            
+                         <tr>
+                            <td>{{i.name}}</td>
+                            <td class="text-danger">{{i.stock}}</td>
+                            <td>10</td>
+                            <td>supplier A</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary">Order Stock</button>
+                                <button class="btn btn-sm btn-info">View Drug</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="tab-pane fade" role="tabpanel"  id="expired" aria-labelledby="expired-tab">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Drug Name</th>
+                            <th>Expiry Date</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expiredTableBody">
+                        <!-- Expired drugs will be loaded here -->
+                        
+                        {% for i in expired %}
+                        
+                            
+                         <tr>
+                            <td>{{i.name}}</td>
+                            <td class="text-danger">{{i.expiry_date}}</td>
+                            <td>{{i.stock}}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning" >Dispose</button>
+                                <button class="btn btn-sm btn-info" >View Drug</button>
+                            </td>
+                        </tr>
+                            
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+  
+</body>
+</html>
+{% endblock content %}

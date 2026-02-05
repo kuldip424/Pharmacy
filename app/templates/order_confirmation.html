@@ -1,0 +1,79 @@
+{% extends 'navbar.html' %}
+
+{% block content %}
+
+    
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Online - Order Confirmation</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
+        .navbar { background-color: #007bff; }
+        .navbar-brand, .nav-link { color: white !important; }
+        .hero { background: linear-gradient(135deg, #007bff, #28a745); color: white; padding: 50px 0; text-align: center; }
+        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
+    </style>
+</head>
+<body>
+    <!-- Navbar (same as others) -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="customer-home.html"><i class="fas fa-pills"></i> Pharmacy Online</a>
+            <!-- Rest of navbar -->
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <h1>Order Confirmed!</h1>
+            <p>Thank you for your purchase. Your order has been placed successfully.</p>
+        </div>
+    </section>
+
+    <!-- Confirmation Details -->
+    <section class="py-5">
+        <div class="container">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Order Details</h4>
+                    <p><strong>Order Number:</strong> #{{ order.id }}</p>
+                    <p><strong>Estimated Delivery:</strong> 3-5 business days</p>
+                    <p><strong>Shipping Address:</strong> {{ order.address }}, {{ order.city }}, {{ order.state }}, {{ order.zipcode }}</p>
+                    <p><strong>Total:</strong> Rs.{{ total|floatformat:2 }}</p>
+                    <hr>
+                    <h5>Items Ordered:</h5>
+                    <ul id="order-items">
+                        <!-- Dynamically load from localStorage or simulate -->
+                        {% for item in items %}
+                            <li>{{ item.product.name }} (x{{ item.qty }}) - Rs.{{ item.total_price|floatformat:2 }}</li>
+                        {% endfor %}
+                    </ul>
+                    <a href="{% url 'product' %}" class="btn btn-primary">Continue Shopping</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2023 Pharmacy Online. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- JS -->
+  
+</body>
+</html>
+    
+{% endblock content %}

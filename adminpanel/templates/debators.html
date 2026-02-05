@@ -1,0 +1,171 @@
+{% extends 'adminnavbar.html' %}
+
+{% block content %}
+
+    
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Debtors Management</h1>
+            <button class="btn btn-primary" id="exportBtn">Export Debtors</button>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <input type="text" class="form-control" id="searchInput" placeholder="Search debtors...">
+            </div>
+            <div class="col-md-3">
+                <select class="form-control" id="debtFilter">
+                    <option value="">All Debt Levels</option>
+                    <option value="low">Low Debt (<50)</option>
+                    <option value="high">High Debt (>=50)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Debtors Table -->
+        <div class="card">
+            <div class="card-header">
+                <h6>Debtors</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered" id="debtorsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Total Purchases</th>
+                            <th>Outstanding Debt</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="debtorsTableBody">
+                        <!-- Debtors will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debtor Details Modal -->
+    <div class="modal fade" id="debtorDetailsModal" tabindex="-1" aria-labelledby="debtorDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="debtorDetailsModalLabel">Debtor Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="debtorDetailsBody">
+                    <!-- Debtor details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="markPaidBtn">Mark as Paid</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let debtors = [];
+
+        // Load debtors from API (replace with your backend)
+        async function loadDebtors() {
+            try {
+                // Example data - replace with fetch('/api/customers/?status=debtor')
+                debtors = [
+                    { id: 1, name: 'John Doe', email: 'john@example.com', phone: '123-456-7890', total_purchases: 150.00, outstanding_debt: 25.00, address: '123 Main St', registration_date: '2023-01-01' },
+                    { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '987-654-3210', total_purchases: 200.00, outstanding_debt: 75.00, address: '456 Elm St', registration_date: '2023-02-01' }
+                ];
+                renderDebtorsTable(debtors);
+            } catch (error) {
+                console.error('Error loading debtors:', error);
+            }
+        }
+
+        // Render debtors table
+        function renderDebtorsTable(debtorsList) {
+            const tbody = document.getElementById('debtorsTableBody');
+            tbody.innerHTML = debtorsList.map(debtor => `
+                <tr>
+                    <td>${debtor.name}</td>
+                    <td>${debtor.email}</td>
+                    <td>${debtor.phone}</td>
+                    <td>$${debtor.total_purchases}</td>
+                    <td class="text-danger">$${debtor.outstanding_debt}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="viewDebtorDetails(${debtor.id})">View Details</button>
+                        <button class="btn btn-sm btn-success" onclick="markAsPaid(${debtor.id})">Mark Paid</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search and filter
+        document.getElementById('searchInput').addEventListener('input', filterDebtors);
+        document.getElementById('debtFilter').addEventListener('change', filterDebtors);
+
+        function filterDebtors() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const debt = document.getElementById('debtFilter').value;
+
+            let filtered = debtors.filter(debtor => 
+                debtor.name.toLowerCase().includes(search) &&
+                (debt === '' || (debt === 'low' && debtor.outstanding_debt < 50) || (debt === 'high' && debtor.outstanding_debt >= 50))
+            );
+            renderDebtorsTable(filtered);
+        }
+
+        // View debtor details
+        function viewDebtorDetails(id) {
+            const debtor = debtors.find(d => d.id === id);
+            if (debtor) {
+                document.getElementById('debtorDetailsBody').innerHTML = `
+                    <p><strong>Name:</strong> ${debtor.name}</p>
+                    <p><strong>Email:</strong> ${debtor.email}</p>
+                    <p><strong>Phone:</strong> ${debtor.phone}</p>
+                    <p><strong>Address:</strong> ${debtor.address}</p>
+                    <p><strong>Total Purchases:</strong> $${debtor.total_purchases}</p>
+                    <p><strong>Outstanding Debt:</strong> $${debtor.outstanding_debt}</p>
+                    <p><strong>Registration Date:</strong> ${debtor.registration_date}</p>
+                `;
+                new bootstrap.Modal(document.getElementById('debtorDetailsModal')).show();
+            }
+        }
+
+        // Mark as paid
+        function markAsPaid(id) {
+            if (confirm('Are you sure you want to mark this debt as paid?')) {
+                const debtorIndex = debtors.findIndex(d => d.id === id);
+                if (debtorIndex !== -1) {
+                    debtors[debtorIndex].outstanding_debt = 0;
+                    // Replace with PATCH to your API
+                    console.log('Marking debt as paid for debtor ID:', id);
+                    loadDebtors(); // Reload table
+                }
+            }
+        }
+
+        // Export debtors
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            const csvContent = "data:text/csv;charset=utf-8," + 
+                "Name,Email,Phone,Total Purchases,Outstanding Debt\n" +
+                debtors.map(d => `${d.name},${d.email},${d.phone},${d.total_purchases},${d.outstanding_debt}`).join("\n");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "debtors.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // Load on page load
+        loadDebtors();
+    </script>
+</body>
+</html>
+    
+{% endblock content %}

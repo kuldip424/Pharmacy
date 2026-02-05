@@ -1,0 +1,128 @@
+{% extends 'navbar.html' %}
+
+{% block content %}
+    
+
+    
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Online - Shopping Cart</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS for Pharmacy Theme -->
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
+        .navbar { background-color: #007bff; }
+        .navbar-brand, .nav-link { color: white !important; }
+        .hero { background: linear-gradient(135deg, #007bff, #28a745); color: white; padding: 50px 0; text-align: center; }
+        .hero h1 { font-size: 2.5rem; font-weight: bold; }
+        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .table th, .table td { vertical-align: middle; }
+        .btn-danger { background-color: #dc3545; border-color: #dc3545; }
+        .btn-danger:hover { background-color: #c82333; }
+        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
+        .btn-primary { background-color: #007bff; border-color: #007bff; }
+        .btn-primary:hover { background-color: #0056b3; }
+        .empty-cart { text-align: center; padding: 50px; }
+    </style>
+    {% if outofstock %}
+<div class="alert alert-danger text-center">
+    {{ outofstock }}
+</div>
+{% endif %}
+</head>
+<body>
+    
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h1>Your Shopping Cart</h1>
+            <p>Review your selected items, update quantities, and proceed to checkout for a smooth purchase.</p>
+        </div>
+    </section>
+
+    <!-- Cart Items Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title mb-4">Cart Items</h4>
+                    
+                    
+                    {% if data %}
+                        
+                    
+                        
+                     <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        
+                        {% for i in cart %}
+                            
+                        
+                            
+                        <td>{{i.product.name}}</td>
+                        <td>
+                           <a href="{% url 'plus' i.id %}" class="btn btn-primary"> + </a> {{i.qty}} <a href="{% url 'minus' i.id %}" class="btn btn-primary"> - </a> 
+                        </td>
+                        <td>Rs. {{i.product.price}}</td>
+                        <td>Rs. {{i.total_price}}</td>
+                        <td><a href="{% url 'remove' i.id %}"><button class="btn btn-danger btn-sm">Remove</button></td></a>
+                    </tr>
+                    {% endfor %}
+                    </tbody></table>
+                    <div id="cart-summary" class="mt-4">
+                        <hr>
+                        <div class="d-flex justify-content-between">
+                            <h5>Total: Rs. <span id="cart-total">{{total}}</span></h5>
+                        </div>
+                        <div class="text-end mt-3">
+                           <a href="{% url 'checkout' %}"> <button class="btn btn-primary">Proceed to Checkout</button></a>
+                        </div>
+                    </div>
+                    {% else %}
+                      <div id="cart-content">
+                        <!-- Cart items will be dynamically inserted here -->
+                        <div class="empty-cart">
+                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                            <h5>Your cart is empty</h5>
+                            <p>Add some products to get started!</p>
+                            <a href="{% url 'product' %}" class="btn btn-primary">Browse Products</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2023 Pharmacy Online. All rights reserved. | Powered by Pharmacy Management System</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS for Cart Management -->
+    
+</body>
+</html>
+{% endblock content %}

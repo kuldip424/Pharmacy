@@ -1,0 +1,102 @@
+{% extends 'navbar.html' %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Online - Invoice</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS for Invoice -->
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
+        .navbar { background-color: #007bff; }
+        .navbar-brand, .nav-link { color: white !important; }
+        .invoice { background: white; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto; }
+        .invoice-header { border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .table th, .table td { vertical-align: middle; }
+        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
+        .btn-primary { background-color: #007bff; border-color: #007bff; }
+        .btn-primary:hover { background-color: #0056b3; }
+        @media print { .no-print { display: none; } body { background: white; } }
+    </style>
+</head>
+<body>
+    <!-- Invoice Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="invoice">
+                <div class="invoice-header text-center">
+                    <h2>Pharmacy Online</h2>
+                    <p>123 Pharmacy Street, Health City, HC 12345</p>
+                    <p>Email: info@pharmacyonline.com | Phone: (123) 456-7890</p>
+                    <h4>Invoice</h4>
+                    <p><strong>Invoice Number:</strong> INV-{{ order.id }}</p>
+                    <p><strong>Date:</strong> {{ order.datetime|date:"M d, Y" }}</p>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>Bill To:</h5>
+                        <p>{{ order.name }}</p>
+                        <p>{{ order.address }}</p>
+                        <p>{{ order.user.email }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Ship To:</h5>
+                        <p>{{ order.address }}</p>
+                        <p>{{ order.city }}</p>
+                        <p>{{ order.state }}</p>
+                        <p>{{ order.zipcode }}</p>
+                    </div>
+                </div>
+                <table class="table table-bordered mt-4">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>{{ item.product.name }}</td>
+                            <td>{{ item.qty }}</td>
+                            <td>Rs.{{ item.product.price|floatformat:2 }}</td>
+                            <td>Rs.{{ item.total_price|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="text-end">
+                    <p><strong>Subtotal:</strong> Rs.{{ subtotal|floatformat:2 }}</p>
+                    <p><strong>Shipping:</strong> Rs.{{ shipping|floatformat:2 }}</p>
+                    <p><strong>Tax:</strong> Rs.{{ tax|floatformat:2 }}</p>
+                    <p><strong>Total:</strong> Rs.{{ total|floatformat:2 }}</p>
+                </div>
+
+                <div class="text-center mt-4 no-print">
+                    <button class="btn btn-primary" onclick="window.print()">Download PDF</button>
+                    {% comment %} <a href="{% url 'order_detail' order.id %}" class="btn btn-secondary">Back to Order</a> {% endcomment %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer no-print">
+        <div class="container">
+            <p>&copy; 2023 Pharmacy Online. All rights reserved. | Powered by Pharmacy Management System</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+{% endblock %}
