@@ -1,128 +1,138 @@
 {% extends 'navbar.html' %}
 
 {% block content %}
-    
-
-    
-<!DOCTYPE html>
-
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Online - Shopping Cart</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS for Pharmacy Theme -->
-    <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
-        .navbar { background-color: #007bff; }
-        .navbar-brand, .nav-link { color: white !important; }
-        .hero { background: linear-gradient(135deg, #007bff, #28a745); color: white; padding: 50px 0; text-align: center; }
-        .hero h1 { font-size: 2.5rem; font-weight: bold; }
-        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .table th, .table td { vertical-align: middle; }
-        .btn-danger { background-color: #dc3545; border-color: #dc3545; }
-        .btn-danger:hover { background-color: #c82333; }
-        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
-        .btn-primary { background-color: #007bff; border-color: #007bff; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .empty-cart { text-align: center; padding: 50px; }
-    </style>
-    {% if outofstock %}
-<div class="alert alert-danger text-center">
-    {{ outofstock }}
-</div>
-{% endif %}
-</head>
-<body>
-    
-
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Your Shopping Cart</h1>
-            <p>Review your selected items, update quantities, and proceed to checkout for a smooth purchase.</p>
+    <section class="hero py-5 mb-5 text-center text-white" style="background: linear-gradient(135deg, #007bff, #28a745); border-radius: 15px; margin-top: 20px;">
+        <div class="container py-3">
+            <h1 class="display-5 fw-bold">Shopping Cart</h1>
+            <p class="lead shadow-sm d-inline-block px-4 py-2 rounded-pill bg-white bg-opacity-10">Review your selected items before checkout</p>
         </div>
     </section>
 
+    {% if outofstock %}
+    <div class="alert alert-danger alert-dismissible fade show rounded-4 shadow-sm border-0 mb-5 p-4" role="alert">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-exclamation-circle fs-3 me-3"></i>
+            <div>
+                <h6 class="fw-bold mb-1">Availability Issue</h6>
+                <p class="mb-0 small">{{ outofstock }}</p>
+            </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
     <!-- Cart Items Section -->
-    <section class="py-5">
+    <section class="mb-5 pb-5">
         <div class="container">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title mb-4">Cart Items</h4>
-                    
-                    
-                    {% if data %}
-                        
-                    
-                        
-                     <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th>Quantity</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        
-                        {% for i in cart %}
-                            
-                        
-                            
-                        <td>{{i.product.name}}</td>
-                        <td>
-                           <a href="{% url 'plus' i.id %}" class="btn btn-primary"> + </a> {{i.qty}} <a href="{% url 'minus' i.id %}" class="btn btn-primary"> - </a> 
-                        </td>
-                        <td>Rs. {{i.product.price}}</td>
-                        <td>Rs. {{i.total_price}}</td>
-                        <td><a href="{% url 'remove' i.id %}"><button class="btn btn-danger btn-sm">Remove</button></td></a>
-                    </tr>
-                    {% endfor %}
-                    </tbody></table>
-                    <div id="cart-summary" class="mt-4">
-                        <hr>
-                        <div class="d-flex justify-content-between">
-                            <h5>Total: Rs. <span id="cart-total">{{total}}</span></h5>
+            {% if data %}
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                        <div class="card-header bg-white py-4 px-4 border-bottom">
+                            <h4 class="fw-bold text-dark mb-0"><i class="fas fa-shopping-basket me-2 text-primary"></i> Your Items</h4>
                         </div>
-                        <div class="text-end mt-3">
-                           <a href="{% url 'checkout' %}"> <button class="btn btn-primary">Proceed to Checkout</button></a>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light text-muted small text-uppercase">
+                                        <tr>
+                                            <th class="px-4 py-3">Medicine</th>
+                                            <th class="py-3 text-center" style="width: 150px;">Quantity</th>
+                                            <th class="py-3 text-end">Price</th>
+                                            <th class="py-3 text-end">Total</th>
+                                            <th class="px-4 py-3 text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for i in cart %}
+                                        <tr>
+                                            <td class="px-4">
+                                                <div class="d-flex align-items-center py-2">
+                                                    <div class="bg-primary-subtle rounded p-2 me-3 d-none d-md-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                                        <i class="fas fa-capsules text-primary fs-5"></i>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="fw-bold text-dark mb-1">{{i.product.name}}</h6>
+                                                        <small class="text-muted">Unit: Rs.{{i.product.price|floatformat:2}}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden mx-auto" style="width: 110px; border: 1px solid #dee2e6;">
+                                                    <a href="{% url 'minus' i.id %}" class="btn btn-white border-0 py-2"><i class="fas fa-minus text-muted small"></i></a>
+                                                    <span class="input-group-text bg-white border-0 fw-bold flex-grow-1 justify-content-center">{{i.qty}}</span>
+                                                    <a href="{% url 'plus' i.id %}" class="btn btn-white border-0 py-2"><i class="fas fa-plus text-primary small"></i></a>
+                                                </div>
+                                            </td>
+                                            <td class="text-end text-muted">Rs.{{i.product.price|floatformat:2}}</td>
+                                            <td class="text-end fw-bold text-dark">Rs.{{i.total_price|floatformat:2}}</td>
+                                            <td class="px-4 text-end">
+                                                <a href="{% url 'remove' i.id %}" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-1 border-0" title="Remove Item">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
-                    {% else %}
-                      <div id="cart-content">
-                        <!-- Cart items will be dynamically inserted here -->
-                        <div class="empty-cart">
-                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                            <h5>Your cart is empty</h5>
-                            <p>Add some products to get started!</p>
-                            <a href="{% url 'product' %}" class="btn btn-primary">Browse Products</a>
+                    
+                    <a href="{% url 'product' %}" class="btn btn-outline-primary rounded-pill px-4 py-2 border-2">
+                        <i class="fas fa-arrow-left me-2"></i> Keep Shopping
+                    </a>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow rounded-4 sticky-top" style="top: 100px; z-index: 10;">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-4 text-dark border-bottom pb-3">Order Summary</h5>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Subtotal</span>
+                                <span class="text-dark fw-bold">Rs.{{total|floatformat:2}}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3">
+                                <span class="text-muted">Shipping</span>
+                                <span class="text-success small fw-bold">Calculated at Checkout</span>
+                            </div>
+                            <hr class="my-4 opacity-50">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <span class="h5 fw-bold text-dark mb-0">Total</span>
+                                <span class="h4 fw-bold text-primary mb-0">Rs.{{total|floatformat:2}}</span>
+                            </div>
+                            <a href="{% url 'checkout' %}" class="btn btn-primary btn-lg w-100 rounded-pill py-3 shadow-hover" style="background: linear-gradient(to right, #007bff, #28a745); border: none; font-weight: 700; font-size: 1.1rem;">
+                                Proceed to Checkout <i class="fas fa-arrow-right ms-2"></i>
+                            </a>
+                            <div class="text-center mt-4 text-muted small">
+                                <i class="fas fa-shield-alt me-2 text-success"></i> 256-bit SSL Secure Payment
+                            </div>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
+            {% else %}
+            <div class="row justify-content-center">
+                <div class="col-md-6 text-center py-5">
+                    <div class="bg-white rounded-5 p-5 shadow-sm border border-light">
+                        <i class="fas fa-shopping-cart fa-5x text-light-emphasis mb-4 opacity-25"></i>
+                        <h3 class="fw-bold text-dark mb-3">Your Cart is Empty</h3>
+                        <p class="text-muted mb-5 lead">Looks like you haven't added any medicines yet. Our pharmacist is ready for your orders!</p>
+                        <a href="{% url 'product' %}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm py-3 fw-bold">
+                            Find Medicines Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2023 Pharmacy Online. All rights reserved. | Powered by Pharmacy Management System</p>
+    <footer class="mt-5 py-4 border-top">
+        <div class="container text-center text-muted small">
+            <p>&copy; 2023 Pharmacy Online. Fast Delivery, Reliable Care.</p>
         </div>
     </footer>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS for Cart Management -->
-    
-</body>
-</html>
-{% endblock content %}
+{% endblock %}

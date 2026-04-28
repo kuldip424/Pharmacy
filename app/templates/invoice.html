@@ -68,7 +68,7 @@
                             <td>{{ item.product.name }}</td>
                             <td>{{ item.qty }}</td>
                             <td>Rs.{{ item.product.price|floatformat:2 }}</td>
-                            <td>Rs.{{ item.total_price|floatformat:2 }}</td>
+                            <td>Rs.{{ item.price|floatformat:2 }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

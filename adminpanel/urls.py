@@ -1,11 +1,25 @@
 from django.urls import path
-from .views import deshbordView,lowStockView,inventoryView,salesView,customersView,debatorsView,alertsView
+from .views import dashboardView,lowStockView,inventoryView,salesView,customersView,debtorsView,alertsView,edit_product,delete_product,userlogin,admin_logout,add_product,add_category,delete_category,suppliersView,delete_supplier,update_order,export_sales_csv,export_low_stock_csv,export_expired_drugs_csv,export_upcoming_expiry_csv
 urlpatterns = [
-    path('',deshbordView,name='deshboard'),
+    path('',userlogin,name='userlogin'),
+    path('logout/', admin_logout, name='admin_logout'),
+    path('dashboard',dashboardView,name='dashboard'),
     path('lowstock/',lowStockView,name='lowstock'),
     path('inventory/',inventoryView,name='inventory'),
     path('sales/',salesView,name='sales'),
+    path('sales/export/', export_sales_csv, name='export_sales_csv'),
+    path('lowstock/export/', export_low_stock_csv, name='export_low_stock_csv'),
+    path('expired/export/', export_expired_drugs_csv, name='export_expired_drugs_csv'),
+    path('upcoming-expiry/export/', export_upcoming_expiry_csv, name='export_upcoming_expiry_csv'),
     path('customers',customersView,name='customers'),
-    path('debators/',debatorsView,name='debators'),
-    path('alerts/',alertsView,name='alerts')
+    path('debtors/',debtorsView,name='debtors'),
+    path('alerts/',alertsView,name='alerts'),
+    path('edit/<int:id>/', edit_product, name='edit_product'),
+    path('add/', add_product, name='add_product'),
+    path('inventory/<int:id>/', delete_product, name='delete_product'),
+    path('categories/', add_category, name='add_category'),
+    path('categories/delete/<int:id>/', delete_category, name='delete_category'),
+    path('suppliers/', suppliersView, name='suppliers'),
+    path('suppliers/delete/<int:id>/', delete_supplier, name='delete_supplier'),
+    path('order/update/<int:id>/', update_order, name='update_order'),
 ]

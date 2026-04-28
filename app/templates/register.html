@@ -1,116 +1,110 @@
-
 {% extends 'navbar.html' %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Online - Register</title>
-    <!-- Local Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS -->
-    <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
-        .navbar { background-color: #007bff; }
-        .navbar-brand, .nav-link { color: white !important; }
-        .hero { background: linear-gradient(135deg, #007bff, #28a745); color: white; padding: 50px 0; text-align: center; }
-        .hero h1 { font-size: 2.5rem; font-weight: bold; }
-        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
-        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
-        .btn-primary { background-color: #007bff; border-color: #007bff; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .form-control:focus { border-color: #007bff; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
-    </style>
-</head>
-<body>
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Create Your Account</h1>
-            <p>Join Pharmacy Online to access exclusive deals, track orders, and manage your health needs easily.</p>
-        </div>
-    </section>
+    <div class="row justify-content-center mt-5 mb-5 pt-lg-2">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="transition: transform 0.3s; background: linear-gradient(to bottom right, #ffffff, #f8f9fa);">
+                <div class="p-5">
+                    <div class="text-center mb-5">
+                        <div class="h2 fw-bold text-primary mb-2">Create Your Account</div>
+                        <p class="text-muted lead">Join our pharmacy today for customized health care.</p>
+                    </div>
 
-    <!-- Registration Form Section -->
-    <section class="py-5">
-        <div class="container">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title text-center mb-4">Register</h4>
+                    {% if messages %}
+                        {% for msg in messages %}
+                        <div class="alert alert-{% if msg.tags %}{{ msg.tags }}{% else %}info{% endif %} alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
+                            <i class="fas fa-info-circle me-2"></i> {{ msg }}
+                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
                     {% if error %}
-                    <div class="alert alert-danger text-center">
-                        {{ error }}
+                    <div class="alert alert-danger rounded-3 shadow-sm border-0 mb-4 shadow">
+                        <i class="fas fa-exclamation-triangle me-2"></i> {{ error }}
                     </div>
                     {% endif %}
-                    {% if messages %}
-                    {% for msg in messages %}
-                        <div class="alert alert-success text-center">
-                            {{ msg }}
-                        </div>
-                    {% endfor %}
-                    {% endif %}
-                    <form action="" method="post" id="registration-form">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="fullName" class="form-label">Full Name</label>
-                            <input type="text" name="name" class="form-control" id="fullName" placeholder="Enter your full name" value="{{ data.name|default:'' }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" value="{{ data.email|default:'' }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="phone" class="form-label">Phone Number</label>
-                            <input type="tel" name="mobile" class="form-control" id="phone" pattern="[0-9]{10}" title="Enter a 10-digit phone number" placeholder="Enter your phone number" value="{{ data.mobile|default:'' }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" id="password" placeholder="Create a password" required minlength="6">
-                        </div>
-                        
-                          <button type="submit" name="send_otp"
-                                    class="btn btn-primary w-100"
-                                      >
-                                Send OTP
-                            </button>
-                        {% if show_otp %}
-                            
-                            
-                            <div class="mb-3">
-                                <label class="form-label">OTP</label>
-                                <input type="text" name="otp" class="form-control"
-                                    minlength="6" maxlength="6" pattern="[0-9]{6}" >
-                            </div>
 
-                            
+                    {% if message %}
+                    <div class="alert alert-success rounded-3 shadow-sm border-0 mb-4 shadow">
+                        <i class="fas fa-check-circle me-2"></i> {{ message }}
+                    </div>
+                    {% endif %}
+
+                    {% if show_otp %}
+                    <!-- OTP Verification Form -->
+                    <div class="text-center py-4 bg-primary-subtle rounded-4 mb-4">
+                        <i class="fas fa-paper-plane h3 d-block text-primary mb-3"></i>
+                        <h4 class="fw-bold text-dark">Verify Email</h4>
+                        <p class="text-muted small px-4">We sent a 6-digit verification code to your email.</p>
                         
-                            <button type="submit" name="verify_otp"
-                                    class="btn btn-primary w-100">
-                                Verify & Register
+                        <form method="post" action="{% url 'register' %}" class="px-5 mt-4">
+                            {% csrf_token %}
+                            <div class="form-group mb-4">
+                                <label for="otp" class="form-label text-muted small fw-bold text-uppercase tracking-wider">Verification Code</label>
+                                <input type="text" name="otp" class="form-control form-control-lg text-center fw-bold fs-3 tracking-widest bg-light border-0 shadow-sm" id="otp" placeholder="000000" maxlength="6" required style="border-radius: 12px; height: 65px; letter-spacing: 12px;">
+                            </div>
+                            <button type="submit" name="verify_otp" class="btn btn-primary btn-lg w-100 rounded-pill py-3 shadow-sm" style="background: linear-gradient(to right, #007bff, #28a745); border: none; font-weight: 700; font-size: 1.1rem; transition: all 0.3s;">
+                                Verify Account
                             </button>
-                        {% endif %}
+                            <div class="mt-3">
+                                <button type="submit" name="send_otp" class="btn btn-link text-decoration-none small fw-bold">Didn't receive code? Resend</button>
+                            </div>
+                        </form>
+                    </div>
+                    {% else %}
+                    <!-- Registration Form -->
+                    <form method="post" action="{% url 'register' %}" class="mt-4">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <div class="form-floating mb-3">
+                                    <input type="text" name="name" value="{{ data.name }}" class="form-control bg-light border-0 shadow-sm" id="name" placeholder="Name" required style="border-radius: 12px;">
+                                    <label for="name" class="text-muted ms-1"><i class="fas fa-user-circle me-2 text-primary opacity-75"></i> Full Name</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="email" name="email" value="{{ data.email }}" class="form-control bg-light border-0 shadow-sm" id="email" placeholder="name@example.com" required style="border-radius: 12px;">
+                                    <label for="email" class="text-muted ms-1"><i class="fas fa-envelope me-2 text-primary opacity-75"></i> Email Address</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating mb-3">
+                                    <input type="tel" name="mobile" value="{{ data.mobile }}" class="form-control bg-light border-0 shadow-sm" id="mobile" placeholder="Mobile" required maxlength="10" style="border-radius: 12px;">
+                                    <label for="mobile" class="text-muted ms-1"><i class="fas fa-phone-alt me-2 text-primary opacity-75"></i> Mobile Number</label>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="form-floating mb-4">
+                                    <input type="password" name="password" class="form-control bg-light border-0 shadow-sm" id="password" placeholder="Password" required minlength="6" style="border-radius: 12px;">
+                                    <label for="password" class="text-muted ms-1"><i class="fas fa-key me-2 text-primary opacity-75"></i> Create Password</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-4 ps-1">
+                            <input class="form-check-input shadow-none cursor-pointer" type="checkbox" value="" id="policy" required style="width: 1.2rem; height: 1.2rem; border-color: #dee2e6;">
+                            <label class="form-check-label text-muted ms-2 small" for="policy">
+                                I agree to the <a href="#" class="text-primary text-decoration-none fw-semibold">Terms of Service</a> and <a href="#" class="text-primary text-decoration-none fw-semibold">Privacy Policy</a>.
+                            </label>
+                        </div>
+                        
+                        <button type="submit" name="send_otp" class="btn btn-primary btn-lg w-100 rounded-pill py-3 shadow-sm" style="background: linear-gradient(to right, #007bff, #28a745); border: none; font-weight: 700; font-size: 1.1rem; transition: all 0.3s;">
+                            Sign Up & Send OTP
+                        </button>
                     </form>
-                    <div class="text-center mt-3">
-                        <p>Already have an account? <a href="">Login here</a></p>
+                    {% endif %}
+
+                    <div class="text-center mt-5">
+                        <p class="text-muted small">Already have an account? <a href="{% url 'login' %}" class="text-primary text-decoration-none fw-bold ms-1" style="border-bottom: 2px solid rgba(0, 123, 255, 0.2); transition: all 0.3s;">Sign in here</a></p>
                     </div>
                 </div>
             </div>
+            
+            <div class="text-center mt-4 text-muted small">
+                <i class="fas fa-lock me-2 text-success"></i> Account data is encrypted using NIST-standard protocols.
+            </div>
         </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2023 Pharmacy Online. All rights reserved. | Powered by Pharmacy Management System</p>
-        </div>
-    </footer>
-
-    <!-- Local Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
-{% endblock %} 
+    </div>
+{% endblock content %}

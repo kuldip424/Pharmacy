@@ -2,113 +2,58 @@
 
 {% block content %}
     <div class="container-fluid">
-        <h1 class="mt-4">Alerts</h1>
+        <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+            <h1>Stock Alerts</h1>
+            <div>
+                <a href="{% url 'export_low_stock_csv' %}" class="btn btn-success me-2">
+                    <i class="fas fa-file-csv me-2"></i>Download Low Stock
+                </a>
+                <a href="{% url 'export_upcoming_expiry_csv' %}" class="btn btn-info">
+                    <i class="fas fa-file-csv me-2"></i>Next Month's Expiry
+                </a>
+            </div>
+        </div>
+
         <ul class="nav nav-tabs" id="alertTabs" role="tablist">
             <li class="nav-item">
-                <a class="nav-link active" id="low-stock-tab" data-toggle="tab" href="#low-stock">Low Stock Alerts</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="expired-tab" data-toggle="tab" href="#expired">Expired Drugs</a>
+                <a class="nav-link active" id="low-stock-tab" data-bs-toggle="tab" href="#low-stock">Low Stock Alerts</a>
             </li>
         </ul>
-        <div class="tab-content mt-3">
+
+        <div class="tab-content mt-3 card shadow p-3">
             <div class="tab-pane fade show active" id="low-stock">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Drug Name</th>
-                            <th>Current Stock</th>
-                            <th>Minimum Stock</th>
-                            <th>Supplier</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="lowStockTableBody">
-                        <!-- Low stock alerts will be loaded here -->
-                    </tbody>
-                </table>
-            </div>
-            <div class="tab-pane fade" id="expired">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Drug Name</th>
-                            <th>Expiry Date</th>
-                            <th>Stock</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="expiredTableBody">
-                        <!-- Expired drugs will be loaded here -->
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Drug Name</th>
+                                <th>Current Stock</th>
+                                <th>Threshold</th>
+                                <th>Supplier</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in products %}
+                            <tr>
+                                <td><strong>{{i.name}}</strong></td>
+                                <td><span class="badge bg-danger">{{i.stock}}</span></td>
+                                <td>5</td>
+                                <td>{{i.supplier.name|default:"N/A"}}</td>
+                                <td>
+                                    <a href="{% url 'edit_product' i.id %}" class="btn btn-sm btn-primary">Restock</a>
+                                    <a href="{% url 'inventory' %}" class="btn btn-sm btn-outline-info">View inventory</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted p-4">No critical low stock items (<= 5).</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Load low stock alerts (replace with your API or data source)
-        async function loadLowStockAlerts() {
-            // Example data - replace with fetch from your backend
-            const alerts = [
-                { drug_name: 'Aspirin', current_stock: 5, min_stock: 10, supplier: 'Supplier A', drug_id: 1 },
-                { drug_name: 'Ibuprofen', current_stock: 3, min_stock: 10, supplier: 'Supplier B', drug_id: 2 }
-            ];
-            const tbody = document.getElementById('lowStockTableBody');
-            tbody.innerHTML = alerts.map(alert => `
-                <tr>
-                    <td>${alert.drug_name}</td>
-                    <td class="text-danger">${alert.current_stock}</td>
-                    <td>${alert.min_stock}</td>
-                    <td>${alert.supplier}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="orderStock(${alert.drug_id})">Order Stock</button>
-                        <button class="btn btn-sm btn-info" onclick="viewDrug(${alert.drug_id})">View Drug</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        // Load expired drugs (replace with your API or data source)
-        async function loadExpiredAlerts() {
-            // Example data - replace with fetch from your backend
-            const alerts = [
-                { drug_name: 'Paracetamol', expiry_date: '2023-10-01', stock: 20, drug_id: 3 },
-                { drug_name: 'Amoxicillin', expiry_date: '2023-09-15', stock: 15, drug_id: 4 }
-            ];
-            const tbody = document.getElementById('expiredTableBody');
-            tbody.innerHTML = alerts.map(alert => `
-                <tr>
-                    <td>${alert.drug_name}</td>
-                    <td class="text-danger">${alert.expiry_date}</td>
-                    <td>${alert.stock}</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning" onclick="disposeDrug(${alert.drug_id})">Dispose</button>
-                        <button class="btn btn-sm btn-info" onclick="viewDrug(${alert.drug_id})">View Drug</button>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function orderStock(drugId) {
-            alert(`Ordering stock for drug ID: ${drugId}`);
-        }
-
-        function disposeDrug(drugId) {
-            if (confirm('Are you sure you want to dispose of this expired drug?')) {
-                alert(`Disposing drug ID: ${drugId}`);
-            }
-        }
-
-        function viewDrug(drugId) {
-            window.location.href = `/drugs/${drugId}/`; // Adjust URL
-        }
-
-        // Load on page load
-        loadLowStockAlerts();
-        loadExpiredAlerts();
-    </script>
-</body>
-</html>
 {% endblock content %}

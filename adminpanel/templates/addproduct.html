@@ -1,0 +1,102 @@
+{% extends 'adminnavbar.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Add New Drug</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <input type="text" name="name" class="form-control" placeholder="Enter drug name" required>
+                        </div>
+
+                        <!-- Image -->
+                        <div class="mb-3">
+                            <label class="form-label">Image</label>
+                            <input type="file" name="image" class="form-control" required>
+                            <small class="text-muted">Upload a clear image of the product</small>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <select name="category" class="form-select" required>
+                                <option value="" disabled selected>Select Category</option>
+                                {% for c in cat %}
+                                    <option value="{{ c.id }}">
+                                        {{ c.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Supplier -->
+                        <div class="mb-3">
+                            <label class="form-label">Supplier</label>
+                            <select name="supplier" class="form-select">
+                                <option value="" selected>Select Supplier (Optional)</option>
+                                {% for s in suppliers %}
+                                    <option value="{{ s.id }}">
+                                        {{ s.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Stock -->
+                        <div class="mb-3">
+                            <label class="form-label">Stock</label>
+                            <input type="number" name="stock" class="form-control" placeholder="Quantity in stock" required>
+                        </div>
+
+                        <!-- Buy Price -->
+                        <div class="mb-3">
+                            <label class="form-label">Buy Price (Cost)</label>
+                            <input type="number" name="buy_price" step="0.01" class="form-control" placeholder="What you paid" required>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="mb-3">
+                            <label class="form-label">Selling Price</label>
+                            <input type="number" name="price" step="0.01" class="form-control" placeholder="Customer price" required>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="3" placeholder="Enter product description" required></textarea>
+                        </div>
+
+                        <!-- Manufacture Date -->
+                        <div class="mb-3">
+                            <label class="form-label">Manufacture Date</label>
+                            <input type="date" name="manufacture_date" class="form-control" required>
+                        </div>
+
+                        <!-- Expiry Date -->
+                        <div class="mb-3">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="date" name="expiry_date" class="form-control" required>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-end">
+                            <a href="{% url 'inventory' %}" class="btn btn-secondary me-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Product</button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

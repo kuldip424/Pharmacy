@@ -1,11 +1,12 @@
 from django.urls import path
-from .views import indexView ,RegistrationView,loginView,productView,ForgotView,productDetail,cartView,plusView,minusView,removeView,checkoutView,orderHistory,orderDetail,invoiceView,CancelOrderView,searchView,addToCartView,logoutView,orderConfirmation
+from .views import indexView ,RegistrationView,loginView,productView,ForgotView,productDetail,cartView,plusView,minusView,removeView,checkoutView,orderHistory,orderDetail,invoiceView,CancelOrderView,searchView,addToCartView,logoutView,orderConfirmation,payment,payment_handler,aboutus
 urlpatterns = [
     path('',indexView,name='index'),
     path('register/',RegistrationView,name='register'),
     path('login/',loginView,name='login'),
     path('logout/',logoutView,name='logout'),
     path('product/',productView,name='product'),
+    path('aboutus/',aboutus,name='aboutus'),
     path('product_category/<int:id>/',productView,name='product_category'),
     path('forgot/',ForgotView,name='forgot'),
     path('detail/<int:id>/',productDetail,name='detail'),
@@ -21,4 +22,7 @@ urlpatterns = [
     path('search/',searchView,name='search'),
     path('addtocart/<int:id>/',addToCartView,name='addtocart'),
     path('confirm/<int:id>/',orderConfirmation,name='confirm'),
+    
+    path('payment/', payment, name='payment'),
+    path('payment_handler/',payment_handler,name='payment_handler'),
 ]

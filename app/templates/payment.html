@@ -1,0 +1,102 @@
+{% extends 'navbar.html' %}
+
+{% block content %}
+<div class="row justify-content-center py-5">
+    <div class="col-md-6 text-center">
+        <div class="card border-0 shadow-lg p-5 rounded-4 bg-white animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;">
+            <div class="mb-4">
+                <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+            <h3 class="fw-bold text-dark mb-3">Initializing Secure Payment</h3>
+            <p class="text-muted mb-4">Please wait while we connect to Razorpay. Do not refresh or close this page.</p>
+            
+            <div class="d-flex justify-content-center gap-2 mb-4">
+                <i class="fab fa-cc-visa text-muted fs-2"></i>
+                <i class="fab fa-cc-mastercard text-muted fs-2"></i>
+                <i class="fas fa-mobile-alt text-muted fs-2"></i>
+                <i class="fas fa-university text-muted fs-2"></i>
+            </div>
+            
+            <button id="rzp-button" class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow">
+                Open Payment Modal <i class="fas fa-external-link-alt ms-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    var options = {
+        "key": "{{ razorpay_merchant_key }}",
+        "amount": "{{ razorpay_amount }}",
+        "currency": "{{ currency }}",
+        "name": "Pharmacy Online",
+        "description": "Medicine Purchase",
+        "order_id": "{{ razorpay_order_id }}",
+        "handler": function (response){
+            // Use a hidden form to submit the response to our backend
+            var form = document.createElement("form");
+            form.method = "POST";
+            form.action = "{% url 'payment_handler' %}";
+            
+            var fields = {
+                'razorpay_payment_id': response.razorpay_payment_id,
+                'razorpay_order_id': response.razorpay_order_id,
+                'razorpay_signature': response.razorpay_signature,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            };
+
+            for (var key in fields) {
+                var input = document.createElement("input");
+                input.type = "hidden";
+                input.name = key;
+                input.value = fields[key];
+                form.appendChild(input);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        },
+        "prefill": {
+            "name": "{{ request.session.name|default:'Guest' }}",
+            "email": "{{ request.session.login|default:'test@example.com' }}",
+            "contact": "{{ request.session.mobile|default:'9999999999' }}"
+        },
+        "theme": {
+            "color": "#007bff"
+        },
+        "modal": {
+            "ondismiss": function(){
+                window.location.href = "{% url 'checkout' %}";
+            }
+        }
+    };
+    
+    console.log("Razorpay Options:", options);
+    
+    var rzp = new Razorpay(options);
+    
+    // Auto-open modal
+    window.onload = function() {
+        rzp.open();
+    };
+
+    document.getElementById('rzp-button').onclick = function(e){
+        rzp.open();
+        e.preventDefault();
+    }
+</script>
+
+<style>
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    .animate__pulse {
+        animation: pulse 2s infinite;
+    }
+</style>
+{% endblock content %}

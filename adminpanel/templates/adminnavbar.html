@@ -57,18 +57,37 @@
 <div class="sidebar">
     <h4 class="p-3">Pharmacy Admin</h4>
     <ul class="list-unstyled">
-        <li><a href="{% url 'deshboard' %}">Dashboard</a></li>
+        <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
         <li><a href="{% url 'inventory' %}">Inventory</a></li>
+        <li><a href="{% url 'add_category' %}">Categories</a></li>
+        <li><a href="{% url 'suppliers' %}">Suppliers</a></li>
+        {% if request.session.role == 'admin' %}
         <li><a href="{% url 'sales' %}">Sales</a></li>
+        {% endif %}
         <li><a href="{% url 'customers' %}">Customers</a></li>
-        <li><a href="{% url 'debators' %}">Debtors</a></li>
+        <li><a href="{% url 'debtors' %}">Debtors</a></li>
         <li><a href="{% url 'lowstock' %}">Alerts</a></li>
+        <li><hr class="dropdown-divider bg-white"></li>
+        <li><a href="{% url 'admin_logout' %}" class="text-danger"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
     </ul>
 </div>
 
 <div class="main-content">
+    {% if messages %}
+        <div class="container-fluid">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     {% block content %}
     {% endblock content %}
 </div>
 
+{% block extra_js %}
+{% endblock %}
 </body>

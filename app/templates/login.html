@@ -1,94 +1,80 @@
 {% extends 'navbar.html' %}
 
 {% block content %}
-    
+    <div class="row justify-content-center mt-5 mb-5 pt-lg-5">
+        <div class="col-lg-5 col-md-7">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="transition: transform 0.3s; background: linear-gradient(to bottom right, #ffffff, #f8f9fa);">
+                <div class="p-5">
+                    <div class="text-center mb-5">
+                        <div class="h2 fw-bold text-primary mb-2">Welcome Back</div>
+                        <p class="text-muted lead">Log in to manage your health and prescriptions.</p>
+                    </div>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Online - Login</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS for Pharmacy Theme -->
-    <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
-        .navbar { background-color: #007bff; }
-        .navbar-brand, .nav-link { color: white !important; }
-        .hero { background: linear-gradient(135deg, #007bff, #28a745); color: white; padding: 50px 0; text-align: center; }
-        .hero h1 { font-size: 2.5rem; font-weight: bold; }
-        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
-        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
-        .btn-primary { background-color: #007bff; border-color: #007bff; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .form-control:focus { border-color: #007bff; box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); }
-    </style>
-</head>
-<body>
-    <!-- Navigation Bar (Sticky) -->
-    
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Login to Your Account</h1>
-            <p>Access your account to view orders, manage your profile, and enjoy personalized shopping.</p>
-        </div>
-    </section>
-
-    <!-- Login Form Section -->
-    <section class="py-5">
-        <div class="container">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title text-center mb-4">Login</h4>
                     {% if messages %}
                         {% for msg in messages %}
-                            <div class="alert alert-success text-center">
-                            {{ msg }}
-                            </div>
+                        <div class="alert alert-{% if msg.tags %}{{ msg.tags }}{% else %}info{% endif %} alert-dismissible fade show rounded-3 shadow-sm border-0 mb-4" role="alert">
+                            <i class="fas fa-info-circle me-2"></i> {{ msg }}
+                            <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                         {% endfor %}
-                        {% endif %}
-                    <form id="login-form" method="post">
+                    {% endif %}
+
+                    {% if error %}
+                    <div class="alert alert-danger rounded-3 shadow-sm border-0 mb-4 shadow">
+                        <i class="fas fa-exclamation-triangle me-2"></i> {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form id="login-form" method="post" class="mt-4">
                         {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email Address</label>
-                            <input type="email" name="email" class="form-control" id="email" placeholder="Enter your email" required>
+                        <div class="form-floating mb-4">
+                            <input type="email" name="email" class="form-control bg-light border-0 shadow-sm" id="email" placeholder="name@example.com" required style="border-radius: 12px;">
+                            <label for="email" class="text-muted"><i class="fas fa-envelope me-2 text-primary opacity-75"></i> Email Address</label>
                         </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" id="password" placeholder="Enter your password" required>
+                        <div class="form-floating mb-4 position-relative">
+                            <input type="password" name="password" class="form-control bg-light border-0 shadow-sm" id="password" placeholder="Password" required style="border-radius: 12px; padding-right: 3rem;">
+                            <label for="password" class="text-muted"><i class="fas fa-key me-2 text-primary opacity-75"></i> Password</label>
+                            <span class="position-absolute end-0 top-50 translate-middle-y me-3 cursor-pointer text-muted" onclick="togglePassword()"><i class="far fa-eye" id="toggle-icon"></i></span>
                         </div>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="remember">
-                            <label class="form-check-label" for="remember">Remember me</label>
+                        <div class="d-flex justify-content-between align-items-center mb-4 ps-1">
+                            <div class="form-check">
+                                <input class="form-check-input shadow-none cursor-pointer" type="checkbox" value="" id="remember" style="width: 1.2rem; height: 1.2rem; border-color: #dee2e6;">
+                                <label class="form-check-label text-muted ms-2 small" for="remember">
+                                    Remember me
+                                </label>
+                            </div>
+                            <a href="{% url 'forgot' %}" class="text-primary text-decoration-none small fw-semibold">Forgot password?</a>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                        <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill py-3 shadow-sm" style="background: linear-gradient(to right, #007bff, #28a745); border: none; font-weight: 700; font-size: 1.1rem; transition: all 0.3s;">
+                            Sign In
+                        </button>
                     </form>
-                    <div class="text-center mt-3">
-                        <p>Forgot your password? <a href="#" onclick="alert('Password reset not implemented yet')">Reset here</a></p>
-                        <p>Don't have an account? <a href="register.html">Register here</a></p>
+
+                    <div class="text-center mt-5">
+                        <p class="text-muted small">Don't have an account? <a href="{% url 'register' %}" class="text-primary text-decoration-none fw-bold ms-1" style="border-bottom: 2px solid rgba(0, 123, 255, 0.2); transition: all 0.3s;">Create account</a></p>
                     </div>
                 </div>
             </div>
+            
+            <div class="text-center mt-4 text-muted small">
+                <i class="fas fa-shield-alt me-2 text-success"></i> Secure SSL Encrypted Connection
+            </div>
         </div>
-    </section>
+    </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2023 Pharmacy Online. All rights reserved. | Powered by Pharmacy Management System</p>
-        </div>
-    </footer>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS for Form Validation and Submission -->
-    
-</body>
-</html>
+    <script>
+        function togglePassword() {
+            var passwordField = document.getElementById("password");
+            var toggleIcon = document.getElementById("toggle-icon");
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+                toggleIcon.classList.remove("fa-eye");
+                toggleIcon.classList.add("fa-eye-slash");
+            } else {
+                passwordField.type = "password";
+                toggleIcon.classList.remove("fa-eye-slash");
+                toggleIcon.classList.add("fa-eye");
+            }
+        }
+    </script>
 {% endblock content %}
-    

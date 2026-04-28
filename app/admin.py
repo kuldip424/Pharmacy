@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import RegistrationModel,CategoryModel,ProductModel,ProductDetailModel,CartModel,OrderModel
+from .models import RegistrationModel,CategoryModel,ProductModel,ProductDetailModel,CartModel,OrderModel,orderItemModel
 # Register your models here.
 
 class RegistrationModel_(admin.ModelAdmin):
@@ -26,5 +26,10 @@ class CartModel_(admin.ModelAdmin):
 admin.site.register(CartModel,CartModel_)
 
 class OrderModel_(admin.ModelAdmin):
-    list_display=['id','user','product','qty','total_price','payment_mode','status','datetime']
+    list_display=['id','user','total_price','payment_mode','status','datetime']
 admin.site.register(OrderModel,OrderModel_)
+
+class orderItemModel_(admin.ModelAdmin):
+    list_display =['id','order','product','qty','price']
+    
+admin.site.register(orderItemModel,orderItemModel_)

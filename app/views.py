@@ -1,15 +1,22 @@
-from django.shortcuts import render,redirect
-from .models import RegistrationModel,ProductModel,CategoryModel,ProductDetailModel,CartModel,OrderModel
+from django.shortcuts import render,redirect,get_object_or_404
+from .models import RegistrationModel,ProductModel,CategoryModel,ProductDetailModel,CartModel,OrderModel,orderItemModel
 import random
 from django.core.mail import send_mail
 from django.contrib import messages
+from django.contrib.auth.hashers import make_password, check_password
+from django.core.paginator import Paginator
 # Create your views here.
 def indexView(request):
-    if 'login' in request.session:
-        product = ProductModel.objects.all()
-        return render(request,'index.html',{'product':product,'is_login':True})
-    else:
-        return redirect('login')
+    is_login = 'login' in request.session
+    product_list = ProductModel.objects.all().order_by('id')
+    
+    paginator = Paginator(product_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'index.html', {'product': page_obj, 'is_login': is_login, 'page_obj': page_obj})
+def aboutus(request):
+    return render(request,'aboutus.html')
 def RegistrationView(request):
     error = ""
     message = ""   
@@ -73,7 +80,7 @@ def RegistrationView(request):
                 register.name = data['name']
                 register.email = data['email']
                 register.mobile = data['mobile']
-                register.password = data['password']
+                register.password = make_password(data['password'])
                 register.otp = ''
                 register.is_verified =  True
                 register.save()
@@ -91,8 +98,26 @@ def loginView(request):
     if request.method == 'POST':
         try:
             register = RegistrationModel.objects.get(email = request.POST['email'])
-            if register.password == request.POST['password']:
+            if check_password(request.POST['password'], register.password):
                 request.session['login'] = register.email
+                
+                # Guest Cart Merge Logic
+                guest_cart = request.session.get('guest_cart', [])
+                if guest_cart:
+                    for item in guest_cart:
+                        try:
+                            product = ProductModel.objects.get(id=item['product_id'])
+                            cart_item, created = CartModel.objects.get_or_create(
+                                user=register, product=product, order_id=0,
+                                defaults={'qty': 0, 'total_price': 0}
+                            )
+                            cart_item.qty += item['qty']
+                            cart_item.total_price = cart_item.qty * product.price
+                            cart_item.save()
+                        except ProductModel.DoesNotExist:
+                            continue
+                    del request.session['guest_cart']
+                
                 messages.success(request, f"Welcome back, {register.name}!")
                 return redirect('index')
             else:
@@ -168,7 +193,7 @@ def ForgotView(request):
                 messages.error(request, "Password must be at least 6 characters")
             else:
                 user = RegistrationModel.objects.get(email=email)
-                user.password = password
+                user.password = make_password(password)
                 user.otp = ''
                 user.save()
 
@@ -181,19 +206,27 @@ def ForgotView(request):
     return render(request, 'forgot.html', {'step': step})
 
 def logoutView(request):
-    del request.session['login']
+    request.session.pop('login', None)
     return redirect('login')
         
 def productView(request,id = None):
-    category = CategoryModel.objects.all()
-    if 'login' in request.session:
-        if id:
-            product = ProductModel.objects.filter(categories=id)
-        else:
-            product = ProductModel.objects.all()
-        return render(request, 'product.html', {'product':product,'category':category,'is_login':True})
+    category_list = CategoryModel.objects.all()
+    is_login = 'login' in request.session
+    if id:
+        product_list = ProductModel.objects.filter(categories=id).order_by('id')
     else:
-        return redirect('login')
+        product_list = ProductModel.objects.all().order_by('id')
+    
+    paginator = Paginator(product_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'product.html', {
+        'product': page_obj,
+        'category': category_list,
+        'is_login': is_login,
+        'page_obj': page_obj
+    })
 
 def productDetail(request,id):
     detail = ProductDetailModel.objects.get(product_id = id)
@@ -214,62 +247,132 @@ def productDetail(request,id):
     return render(request,'detail.html',{'detail':detail,'is_login':True})
 
 def cartView(request):
-    if 'login' in request.session:
-        user = RegistrationModel.objects.get(email = request.session['login'])
-        cart = CartModel.objects.filter(user = user,order_id=0)
-        total= 0
-        for i in cart:
-            total += i.total_price
-        msg = None
-        if 'outofstock' in request.session:
-            msg = request.session['outofstock']
-            del request.session['outofstock']
-        if cart:
-            return render(request, 'cart.html', {'cart':cart,'data':True,'outofstock': msg,'total':total,'is_login':True})
-        return render(request, 'cart.html', {'cart':cart,'outofstock': msg,'is_login':True})
-    else:
-        return redirect('login')
+    is_login = 'login' in request.session
+    cart_items = []
+    total = 0
     
-def plusView(request,id):
-    cart = CartModel.objects.get(id = id)
-    product = cart.product
+    if is_login:
+        user = RegistrationModel.objects.get(email=request.session['login'])
+        db_cart = CartModel.objects.filter(user=user, order_id=0)
+        for item in db_cart:
+            cart_items.append(item)
+            total += item.total_price
+    else:
+        # guest_cart is a list of dicts: [{'product_id': 1, 'qty': 2}, ...]
+        guest_cart = request.session.get('guest_cart', [])
+        for item in guest_cart:
+            try:
+                product = ProductModel.objects.get(id=item['product_id'])
+                # Create a pseudo-cart object for the template
+                price = product.price * item['qty']
+                cart_items.append({
+                    'product': product,
+                    'qty': item['qty'],
+                    'total_price': price,
+                    'id': item['product_id'] # Use product_id as reference for plus/minus
+                })
+                total += price
+            except ProductModel.DoesNotExist:
+                continue
+
+    msg = request.session.pop('outofstock', None)
+    
+    context = {
+        'cart': cart_items,
+        'data': True if cart_items else False,
+        'outofstock': msg,
+        'total': total,
+        'is_login': is_login
+    }
+    return render(request, 'cart.html', context)
+    
+def plusView(request, id):
+    if 'login' in request.session:
+        cart = get_object_or_404(CartModel, id=id)
+        product = cart.product
+    else:
+        # guest_cart handling
+        guest_cart = request.session.get('guest_cart', [])
+        if guest_cart is None: guest_cart = []
+        found_item = None
+        for item in guest_cart:
+            if item['product_id'] == id:
+                found_item = item
+                break
+        if not found_item: return redirect('cart')
+        product = get_object_or_404(ProductModel, id=id)
+
     if product.stock < 1:
         request.session['outofstock'] = 'Product is out of stock'
-        return redirect('cart')
     else:
-        cart.qty += 1
-        cart.total_price += product.price
-        cart.save()
+        if 'login' in request.session:
+            cart.qty += 1
+            cart.total_price += product.price
+            cart.save()
+        else:
+            found_item['qty'] += 1
+            request.session.modified = True
         
-        product.stock-=1
+        product.stock -= 1
         product.save()
-        return redirect('cart')
+    return redirect('cart')
     
-def minusView(request,id):
-    cart = CartModel.objects.get(id = id)
-    product = cart.product
-    if cart.qty <=1:
-        product.stock+=1
-        product.save()
-        cart.delete()
-        return redirect('cart')
-    
-    cart.qty -= 1
-    cart.total_price -= product.price
-    cart.save()
-    
-    product.stock+=1
+def minusView(request, id):
+    if 'login' in request.session:
+        cart = get_object_or_404(CartModel, id=id)
+        product = cart.product
+    else:
+        guest_cart = request.session.get('guest_cart', [])
+        if guest_cart is None: guest_cart = []
+        found_item = None
+        for item in guest_cart:
+            if item['product_id'] == id:
+                found_item = item
+                break
+        if not found_item: return redirect('cart')
+        product = get_object_or_404(ProductModel, id=id)
+
+    # Perform removal or decrement
+    should_delete = False
+    if 'login' in request.session:
+        if cart.qty <= 1:
+            should_delete = True
+            cart.delete()
+        else:
+            cart.qty -= 1
+            cart.total_price -= product.price
+            cart.save()
+    else:
+        if found_item['qty'] <= 1:
+            should_delete = True
+            guest_cart.remove(found_item)
+            request.session['guest_cart'] = guest_cart
+        else:
+            found_item['qty'] -= 1
+            request.session.modified = True
+
+    product.stock += 1
     product.save()
     return redirect('cart')
 
-def removeView(request,id):
-    if 'login' not in request.session:
-        return redirect('login')
-    user = RegistrationModel.objects.get(email=request.session['login'])
-    cart = CartModel.objects.get(id = id,user=user)
-    cart.product.stock += cart.qty
-    cart.product.save()
-    cart.delete()
+def removeView(request, id):
+    if 'login' in request.session:
+        user = RegistrationModel.objects.get(email=request.session['login'])
+        cart = get_object_or_404(CartModel, id=id, user=user)
+        cart.product.stock += cart.qty
+        cart.product.save()
+        cart.delete()
+    else:
+        guest_cart = request.session.get('guest_cart', [])
+        if guest_cart is None: guest_cart = []
+        for item in guest_cart:
+            if item['product_id'] == id:
+                product = get_object_or_404(ProductModel, id=id)
+                product.stock += item['qty']
+                product.save()
+                guest_cart.remove(item)
+                request.session['guest_cart'] = guest_cart
+                break
     return redirect('cart')
 
 def checkoutView(request):
@@ -277,72 +380,175 @@ def checkoutView(request):
         user = RegistrationModel.objects.get(email = request.session['login'])
         cart = CartModel.objects.filter(user = user,order_id=0)
         total = 0
+        grant_total =0
         for i in cart:
             total += i.total_price
         grant_total=total+50
-        
+        request.session['amount'] = float(grant_total)
         if request.method == "POST":
-            
-            order = OrderModel()
-            order.user = user
-            order.name = request.POST['name']
-            order.mobile = request.POST['mobile']
-            order.address = request.POST['add']
-            order.city = request.POST['city']
-            order.state = request.POST['state']
-            order.zipcode = request.POST['zip']
-            order.payment_mode = request.POST['payment_method']
-            order.total_price = grant_total
-            order.save()
-            for i in cart:
-               # latest_id=OrderModel.objects.latest('id')
-                i.order_id = order.id
-                i.save()
-            
-            email_subject = f"Order Confirmation - #{order.id}"
-            email_message = f"""
-Hi {user.name},
-
-Thank you for your order!
-
-Order ID: {order.id}
-Total: Rs. {grant_total}
-
-Items Ordered:
-"""
-            for item in cart:
-                email_message += f"- {item.product.name} x {item.qty} = Rs. {item.total_price}\n"
-
-            email_message += f"""
-
-Shipping Address:
-{order.address}, {order.city}, {order.state} - {order.zipcode}
-
-We will notify you when your order is shipped.
-
-Thank you for shopping with us!
-"""
-
-            send_mail(
-                email_subject,
-                email_message,
-                'gojiyaanita@gmail.com',  # From email
-                [user.email],
-                fail_silently=False
-            )
+            if request.POST['payment_method'] == 'COD':
                 
-            cart.delete()
-            return redirect('confirm',id=order.id)
-            
+                order = OrderModel.objects.create(
+                    user=user,    
+                    name=request.POST['name'],
+                    mobile=request.POST['mobile'],
+                    address=request.POST['add'],
+                    city=request.POST['city'],
+                    state=request.POST['state'],
+                    zipcode=request.POST['zip'],
+                    payment_mode="COD",
+                    total_price=grant_total,
+                    status="PLACED",
+                    payment_status="PENDING"
+                )
+                for i in cart:
+                    orderItemModel.objects.create(
+                        order = order,
+                        product = i.product,
+                        qty = i.qty,
+                        price = i.total_price
+                    )
+                    
+                
+                cart.delete()
+                return redirect('confirm', id=order.id)
+            else:
+                request.session['amount'] = float(grant_total)
+                request.session['name'] = request.POST['name']
+                request.session['mobile'] = request.POST['mobile']
+                request.session['address'] = request.POST['add']
+                request.session['city'] = request.POST['city']
+                request.session['state'] = request.POST['state']
+                request.session['zipcode'] = request.POST['zip']
+                request.session['amount'] = float(grant_total)
+                
+                return redirect('payment')
+
         return render(request, 'checkout.html', {'total':total,'grant_total':grant_total,'is_login':True})
-    return redirect('login')
+    else:
+        messages.info(request, "Please login to proceed with checkout.")
+        return redirect('login')
+
+
+import razorpay
+from django.conf import settings
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponseBadRequest
+client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+from django.urls import reverse
+
+def payment(request): 
+    try:
+        amount = request.session.get('amount')
+        if not amount:
+             messages.error(request, "Invalid payment amount.")
+             return redirect('checkout')
+             
+        currency = 'INR'
+        amount_paise = int(float(amount) * 100)
+        
+        razorpay_order = client.order.create(
+            dict(amount=amount_paise, currency=currency, payment_capture=1)
+        )
+        razorpay_order_id = razorpay_order['id']
+        callback_url = request.build_absolute_uri(reverse('payment_handler'))
+        
+        context = {
+            'razorpay_merchant_key': settings.RAZORPAY_KEY_ID,
+            'razorpay_amount': amount_paise,
+            'razorpay_order_id': razorpay_order_id,
+            'callback_url': callback_url,
+            'currency': currency
+        }
+        return render(request, 'payment.html', context)
+    except Exception as e:
+        messages.error(request, f"Payment initialization failed: {str(e)}")
+        return redirect('checkout')
+
+@csrf_exempt
+def payment_handler(request):
+    if request.method != 'POST':
+        return HttpResponseBadRequest("Only POST allowed")
+
+    try:
+        payment_id = request.POST.get('razorpay_payment_id', '')
+        razorpay_order_id = request.POST.get('razorpay_order_id', '')
+        signature = request.POST.get('razorpay_signature', '')
+        
+        params_dict = {
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': payment_id,
+            'razorpay_signature': signature
+        }
+        
+        # Verify signature
+        client.utility.verify_payment_signature(params_dict)
+        
+        # Get order details from session
+        name = request.session.get('name')
+        mobile = request.session.get('mobile')
+        address = request.session.get('address')
+        city = request.session.get('city')
+        state = request.session.get('state')
+        zipcode = request.session.get('zipcode')
+        amount = request.session.get('amount')
+        email = request.session.get('login')
+
+        if not email:
+            return HttpResponseBadRequest("User session expired")
+
+        user = RegistrationModel.objects.get(email=email)
+        cart = CartModel.objects.filter(user=user, order_id=0)
+
+        # Create the Order
+        order = OrderModel.objects.create(
+            user=user,
+            total_price=amount,
+            name=name,
+            mobile=mobile,
+            address=address,
+            city=city,
+            state=state,
+            zipcode=zipcode,
+            payment_mode="Razorpay",
+            status="PLACED",
+            payment_status="PAID",
+            transaction=payment_id
+        )
+
+        # Create Order Items and clear cart
+        for item in cart:
+            orderItemModel.objects.create(
+                order=order,
+                product=item.product,
+                qty=item.qty,
+                price=item.total_price
+            )
+        cart.delete()
+        
+        # Cleanup session
+        for key in ['name', 'mobile', 'address', 'city', 'state', 'zipcode', 'amount']:
+            request.session.pop(key, None)
+
+        return redirect('confirm', id=order.id)
+        
+    except Exception as e:
+        print(f"Razorpay Payment Error: {str(e)}")
+        messages.error(request, f"Payment Verification Failed: {str(e)}")
+        return redirect('checkout')
         
 def orderHistory(request):
     if 'login' in request.session:
         user = RegistrationModel.objects.get(email = request.session['login'])
-        order = OrderModel.objects.filter(user = user)
-        cart_items = CartModel.objects.filter(order_id__in=order.values_list('id', flat=True))
-        return render(request,'history.html',{'order':order,'is_login':True,'cart_items':cart_items})
+        order_list = OrderModel.objects.filter(user=user).order_by('-id')
+        
+        paginator = Paginator(order_list, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        return render(request, 'history.html', {'order': page_obj, 'is_login': True, 'page_obj': page_obj})
     else:
         return redirect('login')
     
@@ -350,10 +556,10 @@ def orderDetail(request,id):
     if 'login' in request.session:
         user = RegistrationModel.objects.get(email = request.session['login'])
         order = OrderModel.objects.get(id = id , user = user)
-        items = CartModel.objects.filter(order_id=order.id)
+        items = orderItemModel.objects.filter(order_id=order.id)
         subtotal = 0
         for i in items:
-            subtotal += i.total_price 
+            subtotal += i.price 
         # total = order.total_price + 50
         return render(request, 'order_detail.html', {'order':order,'total':order.total_price,'is_login':True,'items':items,'subtotal':subtotal})
     return redirect('login')    
@@ -364,10 +570,12 @@ def invoiceView(request,id):
         order = OrderModel.objects.get(id=id, user=user)
 
         # Get all products of this order
-        items = CartModel.objects.filter(order_id=order.id)
+        items = orderItemModel.objects.filter(order_id=order.id)
 
         # Calculate subtotal, shipping, tax, and total
-        subtotal = sum(i.total_price for i in items)
+        subtotal = 0
+        for i in items:
+            subtotal+=i.price
         shipping = 50
         tax = 0  # You can add tax calculation if needed
         total = subtotal + shipping + tax
@@ -385,13 +593,16 @@ def invoiceView(request,id):
     
 def CancelOrderView(request, id):
     if 'login' in request.session:
-        order = OrderModel.objects.get(id=id)
-        if order.status != 'Delivered':
-            order.status = 'Cancelled'
+        order = get_object_or_404(OrderModel, id=id)
+        if order.status != 'DELIVERED' and order.status != 'CANCELLED':
+            order.status = 'CANCELLED'
             order.save()
             
-            order.product.stock+=order.qty
-            order.product.save()
+            # Restore stock for each item in the order
+            items = orderItemModel.objects.filter(order=order)
+            for item in items:
+                item.product.stock += item.qty
+                item.product.save()
 
         return redirect('history')
     else:
@@ -401,10 +612,12 @@ def orderConfirmation(request, id):
     if 'login' in request.session:
         user = RegistrationModel.objects.get(email=request.session['login'])
         order = OrderModel.objects.get(id=id, user=user)
-        items = CartModel.objects.filter(order_id=order.id)
+        items = orderItemModel.objects.filter(order_id=order.id)
 
         # Calculate total
-        subtotal = sum(i.total_price for i in items)
+        subtotal = 0
+        for i in items:
+            subtotal+=i.price
         shipping = 50
         total = subtotal + shipping
 
@@ -424,47 +637,66 @@ def orderConfirmation(request, id):
 from django.db.models import Q
 
 def searchView(request):
-    q = request.GET.get('q')
-
-    if q:
-        pro = ProductModel.objects.filter(
-            Q(name__icontains=q) |
-            Q(description__icontains=q) |
-            Q(categories__name__icontains=q)
-        )
+    query = request.GET.get('q')
+    if query:
+        product_list = ProductModel.objects.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(categories__name__icontains=query)
+        ).order_by('id')
     else:
-        pro = ProductModel.objects.all()
-
-    return render(request, 'product.html', {'pro': pro})
+        product_list = ProductModel.objects.all().order_by('id')
+    
+    paginator = Paginator(product_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    category_list = CategoryModel.objects.all()
+    is_login = 'login' in request.session
+    
+    return render(request, 'product.html', {
+        'product': page_obj, 
+        'category': category_list, 
+        'is_login': is_login,
+        'page_obj': page_obj
+    })
 
 def addToCartView(request, id):
     if request.method == 'POST':
+        product = get_object_or_404(ProductModel, id=id)
+        qty = int(request.POST.get('qty', 1))
+
+        if product.stock < qty:
+            request.session['outofstock'] = f"'{product.name}' is out of stock!"
+            return redirect('product')
+
         if 'login' in request.session:
             user = RegistrationModel.objects.get(email=request.session['login'])
-            product = ProductModel.objects.get(id=id)
-
-            if product.stock < 1:
-                request.session['outofstock'] = f"'{product.name}' is out of stock!"
-                return redirect('product')
-
-            # 🔹 check if product already in cart
-            try:
-                cart = CartModel.objects.get(user=user, product=product,order_id=0)
-                cart.qty += 1
-                cart.total_price = cart.qty * product.price
-                cart.save()
-            except CartModel.DoesNotExist:
-                cart = CartModel()
-                cart.user = user
-                cart.product = product
-                cart.qty = 1
-                cart.total_price = product.price
-                cart.save()
-
-            product.stock -= 1
-            product.save()
-
-            return redirect('cart')
+            cart_item, created = CartModel.objects.get_or_create(
+                user=user, product=product, order_id=0,
+                defaults={'qty': 0, 'total_price': 0}
+            )
+            cart_item.qty += qty
+            cart_item.total_price = cart_item.qty * product.price
+            cart_item.save()
         else:
-            return redirect('login')
+            # Guest Cart Logic
+            guest_cart = request.session.get('guest_cart', [])
+            if guest_cart is None: guest_cart = []
+            item_found = False
+            for item in guest_cart:
+                if item['product_id'] == id:
+                    item['qty'] += qty
+                    item_found = True
+                    break
+            if not item_found:
+                guest_cart.append({'product_id': id, 'qty': qty})
+            request.session['guest_cart'] = guest_cart
+
+        product.stock -= qty
+        product.save()
+        return redirect('cart')
     return redirect('product')
+
+
+

@@ -1,101 +1,110 @@
 {% extends 'navbar.html' %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Online - Order History</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS for Pharmacy Theme -->
-    <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
-        .navbar { background-color: #007bff; }
-        .navbar-brand, .nav-link { color: white !important; }
-        .hero { background: linear-gradient(135deg, #007bff, #28a745); color: white; padding: 50px 0; text-align: center; }
-        .hero h1 { font-size: 2.5rem; font-weight: bold; }
-        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .table th, .table td { vertical-align: middle; }
-        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
-        .btn-primary { background-color: #007bff; border-color: #007bff; }
-        .btn-primary:hover { background-color: #0056b3; }
-        .empty-history { text-align: center; padding: 50px; }
-    </style>
-</head>
-<body>
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Your Order History</h1>
-            <p>View your past purchases and track your orders.</p>
+    <section class="hero py-5 mb-5 text-center text-white" style="background: linear-gradient(135deg, #007bff, #28a745); border-radius: 15px; margin-top: 20px;">
+        <div class="container py-3">
+            <h1 class="display-5 fw-bold">Your Order History</h1>
+            <p class="lead">Track your health journey and manage your past prescriptions.</p>
         </div>
     </section>
 
     <!-- Order History Section -->
-    <section class="py-5">
+    <section class="mb-5 pb-5">
         <div class="container">
-            <div class="card">
-                <div class="card-body">
-                    <h4 class="card-title mb-4">Past Orders</h4>
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white py-4 px-4 border-bottom">
+                    <h4 class="fw-bold text-dark mb-0"><i class="fas fa-receipt me-2 text-primary"></i> Past Orders</h4>
+                </div>
+                <div class="card-body p-0">
                     {% if order %}
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Items</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for i in order %}
-                            <tr>
-                                <td>{{ i.id }}</td>
-                                <td>{{ i.datetime|date:"M d, Y" }}</td>
-                                <td>
-                                    {% for j in cart_items %}
-                                    
-                                        {% if j.order_id == i.id %}
-                     
-                                            {{ j.product.name }} (x{{ j.qty }}) <br>
-                                                       
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light text-muted small text-uppercase">
+                                <tr>
+                                    <th class="px-4 py-3">Order ID</th>
+                                    <th class="py-3">Date</th>
+                                    <th class="py-3">Medicines</th>
+                                    <th class="py-3">Total Amount</th>
+                                    <th class="py-3">Status</th>
+                                    <th class="px-4 py-3 text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in order %}
+                                <tr>
+                                    <td class="px-4 fw-bold text-primary">#ORD-{{ i.id|stringformat:"05d" }}</td>
+                                    <td class="text-muted">{{ i.datetime|date:"M d, Y" }} <br><small>{{ i.datetime|time:"H:i" }}</small></td>
+                                    <td>
+                                        <div class="small">
+                                            {% for j in i.orderitemmodel_set.all %}
+                                                <div class="mb-1"><i class="fas fa-capsules text-success me-2"></i>{{ j.product.name }} <span class="text-muted">(x{{ j.qty }})</span></div>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-bold text-dark">Rs.{{ i.total_price|floatformat:2 }}</span></td>
+                                    <td>
+                                        {% if i.status == 'PLACED' %}
+                                            <span class="badge bg-primary-subtle text-primary border border-primary px-3 py-2 rounded-pill shadow-sm">Placed</span>
+                                        {% elif i.status == 'CANCELLED' %}
+                                            <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-2 rounded-pill">Cancelled</span>
+                                        {% elif i.status == 'DELIVERED' %}
+                                            <span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill">Delivered</span>
+                                        {% else %}
+                                            <span class="badge bg-warning-subtle text-warning border border-warning px-3 py-2 rounded-pill">{{ i.status }}</span>
                                         {% endif %}
-                                        
-                                    {% endfor %}
-                                </td>
-                                <td>Rs.{{ i.total_price|floatformat:2 }}</td>
-                                <td>
-                                    <span class="badge bg-success">{{ i.status }}</span>
-                                </td>
-                                <td>
-                                    <a href="{% url 'orderdetail' i.id %}" class="btn btn-sm btn-outline-primary">View Details</a>
-                                    <a href="{% url 'invoice' i.id %}" class="btn btn-sm btn-outline-primary">Invoice</a>
-                                    {% if i.status == 'Placed' %}
-                                        <a href="{% url 'cancle' i.id %}"
-                                        class="btn btn-danger btn-sm"
-                                        onclick="return confirm('Are you sure you want to cancel this order?');">
-                                            Cancel Order
-                                        </a>
-                                    {% else %}
-                                        <span class="badge bg-secondary">{{ i.status }}</span>
-                                    {% endif %}
+                                    </td>
+                                    <td class="px-4 text-end">
+                                        <div class="btn-group shadow-sm rounded-pill overflow-hidden">
+                                            <a href="{% url 'orderdetail' i.id %}" class="btn btn-sm btn-white border-end" title="View Details"><i class="fas fa-eye text-primary"></i></a>
+                                            <a href="{% url 'invoice' i.id %}" class="btn btn-sm btn-white border-end" title="Download Invoice"><i class="fas fa-file-invoice text-success"></i></a>
+                                            {% if i.status == 'PLACED' %}
+                                                <a href="{% url 'cancle' i.id %}" 
+                                                   class="btn btn-sm btn-white text-danger" 
+                                                   onclick="return confirm('Are you sure you want to cancel this order?');"
+                                                   title="Cancel Order">
+                                                    <i class="fas fa-times-circle"></i>
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="card-footer bg-white py-3 border-top">
+                        <nav aria-label="Order navigation">
+                            <ul class="pagination justify-content-center mb-0">
+                                {% if order.has_previous %}
+                                    <li class="page-item"><a class="page-link rounded-start-pill px-4" href="?page={{ order.previous_page_number }}">Prev</a></li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link rounded-start-pill px-4">Prev</span></li>
+                                {% endif %}
 
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                {% for num in order.paginator.page_range %}
+                                    {% if order.number == num %}
+                                        <li class="page-item active"><span class="page-link px-3">{{ num }}</span></li>
+                                    {% elif num > order.number|add:'-3' and num < order.number|add:'3' %}
+                                        <li class="page-item"><a class="page-link px-3" href="?page={{ num }}">{{ num }}</a></li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if order.has_next %}
+                                    <li class="page-item"><a class="page-link rounded-end-pill px-4" href="?page={{ order.next_page_number }}">Next</a></li>
+                                {% else %}
+                                    <li class="page-item disabled"><span class="page-link rounded-end-pill px-4">Next</span></li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    </div>
                     {% else %}
-                    <div class="empty-history">
-                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                        <h5>No orders yet</h5>
-                        <p>You haven't placed any orders. <a href="{% url 'product' %}">Start shopping</a> to see your history here!</p>
+                    <div class="py-5 text-center">
+                        <i class="fas fa-shopping-basket fa-4x text-light-emphasis mb-4"></i>
+                        <h4 class="fw-bold text-muted">No Orders Found</h4>
+                        <p class="text-muted mb-4 px-5">Your order history is empty. Start shopping for your favorite medicines now!</p>
+                        <a href="{% url 'product' %}" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm">Start Shopping</a>
                     </div>
                     {% endif %}
                 </div>
@@ -104,17 +113,9 @@
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2023 Pharmacy Online. All rights reserved. | Powered by Pharmacy Management System</p>
+    <footer class="mt-5 py-4 border-top">
+        <div class="container text-center text-muted small">
+            <p>&copy; 2023 Pharmacy Online. Guaranteed Quality & Patient Care.</p>
         </div>
     </footer>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS for Reorder -->
-    
-    </script>
-</body>
-</html>
 {% endblock %}

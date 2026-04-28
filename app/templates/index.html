@@ -1,57 +1,31 @@
 {% extends 'navbar.html' %}
 
 {% block content %}
-    
-
-    
-<!DOCTYPE html>
-
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Online - Home</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Custom CSS for Pharmacy Theme -->
-    <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f8f9fa; }
-        .hero { background: linear-gradient(135deg, #007bff, #28a745); color: white; padding: 100px 0; text-align: center; }
-        .hero h1 { font-size: 3rem; font-weight: bold; }
-        .hero p { font-size: 1.2rem; margin-bottom: 30px; }
-        .card { border: none; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s; }
-        .card:hover { transform: translateY(-5px); }
-        .navbar { background-color: #007bff; }
-        .navbar-brand, .nav-link { color: white !important; }
-        .footer { background-color: #343a40; color: white; padding: 40px 0; text-align: center; }
-        .search-bar { max-width: 600px; margin: 0 auto; }
-        .btn-primary { background-color: #007bff; border-color: #007bff; }
-        .btn-primary:hover { background-color: #0056b3; }
-    </style>
-</head>
-<body>
-   
-
     <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="container">
-            <h1>Welcome to Our Pharmacy</h1>
-            <p>Your trusted source for quality medicines and health products. Shop online for convenience and care.</p>
-            <a href="#products" class="btn btn-light btn-lg">Shop Now</a>
+    <section id="home" class="hero position-relative overflow-hidden" style="margin-top: 20px;">
+        {% load static %}
+        <div class="container py-5 text-center text-white rounded-5 shadow-lg position-relative" 
+             style="background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.4)), url('{% static 'images/home-banner.png' %}'); background-size: cover; background-position: center; min-height: 450px; display: flex; align-items: center; justify-content: center;">
+            <div class="py-5 px-3">
+                <h1 class="display-3 fw-bold mb-3 animate__animated animate__fadeInDown">Your Health, Our Mission</h1>
+                <p class="lead mb-4 fs-4 opacity-90 mx-auto" style="max-width: 700px;">Experience the future of pharmacy with professional care and lightning-fast home delivery.</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'product' %}" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm border-0" style="background: var(--primary-color);">Browse Medicines</a>
+                    <a href="#about" class="btn btn-outline-light btn-lg px-5 rounded-pill border-2">Learn More</a>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Search Bar Section -->
     <section class="py-5 bg-white">
         <div class="container">
-            <div class="search-bar">
+            <div class="search-bar mx-auto" style="max-width: 600px;">
                 <form method="get" action="{% url 'search' %}">
-                <div class="input-group mb-3">
-                    <input type="text" name="q" class="form-control" placeholder="Search for medicines, health products..." value="{{ request.GET.q }}" id="search-input">
-                    <button class="btn btn-primary" type="submit" id="search-btn"><i class="fas fa-search"></i> Search</button>
-                </div>
+                    <div class="input-group mb-3 shadow-sm border rounded">
+                        <input type="text" name="q" class="form-control border-0" placeholder="Search for medicines, health products..." value="{{ request.GET.q }}">
+                        <button class="btn btn-primary px-4" type="submit"><i class="fas fa-search"></i> Search</button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -60,94 +34,136 @@
     <!-- Featured Products Section -->
     <section id="products" class="py-5">
         <div class="container">
-            <h2 class="text-center mb-4">Featured Products</h2>
+            <h2 class="text-center mb-5 fw-bold">Our Medicines</h2>
             <div class="row" id="product-list">
-                <!-- Sample Products (Hardcoded for Demo) -->
+                {% for i in product %}
                 <div class="col-md-4 mb-4">
-                    <div class="card">
-                        <img src="https://via.placeholder.com/300x200?text=Aspirin" class="card-img-top" alt="Aspirin">
-                        <div class="card-body">
-                            <h5 class="card-title">Aspirin</h5>
-                            <p class="card-text">Pain reliever and fever reducer. 100 tablets.</p>
-                            <p class="text-success fw-bold">$5.99</p>
-                            <button class="btn btn-primary" onclick="addToCart('Aspirin', 5.99)">Add to Cart</button>
+                    <div class="card h-100 border-0 shadow-sm" style="transition: transform 0.3s; border-radius: 15px; overflow: hidden;">
+                        {% if i.image %}
+                        <img src="{{i.image.url}}" class="card-img-top" alt="{{i.name}}" style="height: 220px; object-fit: cover;">
+                        {% else %}
+                        <img src="https://via.placeholder.com/300x200?text=Medicine" class="card-img-top" alt="{{i.name}}" style="height: 220px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body p-4">
+                            <h5 class="card-title fw-bold text-primary">{{i.name}}</h5>
+                            <p class="card-text text-muted">{{i.description|truncatewords:15}}</p>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="h4 text-success fw-bold mb-0">Rs.{{i.price}}</span>
+                                <form method="post" action="{% url 'addtocart' i.id %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-outline-primary rounded-pill px-4">Add to Cart</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 </div>
-                
-                {% for i in product %}
-                    
-                
-                    
-                <div class="col-md-4 mb-4">
-                    <div class="card">
-                        <img src="{{i.image.url}}" class="card-img-top" alt="Paracetamol">
-                        <div class="card-body">
-                            <h5 class="card-title">{{i.name}}</h5>
-                            <p class="card-text">{{i.description}}.</p>
-                            <p class="text-success fw-bold">Rs.{{i.price}}</p>
-                            <form method="post" action="{% url 'addtocart' i.id %}">
-                                {% csrf_token %}
-                                <button class="btn btn-primary">Add to Cart</button>
-                            </form>
-                        </div>
-                    </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <div class="alert alert-info">No products available at the moment. Please check back later!</div>
                 </div>
                 {% endfor %}
-                
-                
             </div>
+            
+            <!-- Pagination Section -->
+            {% if product.has_other_pages %}
+            <nav class="mt-5 pt-3">
+                <ul class="pagination justify-content-center">
+                    {% if product.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link rounded-start-pill px-4" href="?page={{ product.previous_page_number }}">
+                                Prev
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link rounded-start-pill px-4">Prev</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in product.paginator.page_range %}
+                        {% if product.number == num %}
+                            <li class="page-item active"><span class="page-link px-3">{{ num }}</span></li>
+                        {% elif num > product.number|add:'-3' and num < product.number|add:'3' %}
+                            <li class="page-item"><a class="page-link px-3" href="?page={{ num }}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if product.has_next %}
+                        <li class="page-item">
+                            <a class="page-link rounded-end-pill px-4" href="?page={{ product.next_page_number }}">
+                                Next
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link rounded-end-pill px-4">Next</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
     </section>
 
     <!-- About Us Section -->
     <section id="about" class="py-5 bg-light">
-        <div class="container">
-            <h2 class="text-center mb-4">About Us</h2>
-            <p class="text-center">We are a dedicated pharmacy committed to providing high-quality medicines and health products. With years of experience, we ensure customer satisfaction through efficient service and expert advice. Our system tracks inventory in real-time to keep you stocked with what you need.</p>
+        <div class="container text-center py-4">
+            <h2 class="mb-4 fw-bold">About Us</h2>
+            <p class="lead text-muted mx-auto" style="max-width: 800px;">We are a dedicated pharmacy committed to providing high-quality medicines and health products. With years of experience, we ensure customer satisfaction through efficient service and expert advice. Our pharmacy is available online 24/7 to cater to your needs.</p>
         </div>
     </section>
 
     <!-- Contact Section -->
     <section id="contact" class="py-5">
         <div class="container">
-            <h2 class="text-center mb-4">Contact Us</h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>Get in Touch</h5>
-                    <p><i class="fas fa-map-marker-alt"></i> 123 Pharmacy Street, Health City, HC 12345</p>
-                    <p><i class="fas fa-phone"></i> (123) 456-7890</p>
-                    <p><i class="fas fa-envelope"></i> info@pharmacyonline.com</p>
+            <h2 class="text-center mb-5 fw-bold">Contact Us</h2>
+            <div class="row g-5">
+                <div class="col-md-5">
+                    <div class="bg-primary text-white p-5 rounded-4 shadow h-100">
+                        <h4 class="mb-4">Get in Touch</h4>
+                        <div class="mb-4">
+                            <p class="mb-2"><i class="fas fa-map-marker-alt me-3"></i> <strong>Our Location:</strong></p>
+                            <p class="ms-4">123 Pharmacy Street, Healthy City, HC 12345</p>
+                        </div>
+                        <div class="mb-4">
+                            <p class="mb-2"><i class="fas fa-phone me-3"></i> <strong>Call Us:</strong></p>
+                            <p class="ms-4">(123) 456-7890</p>
+                        </div>
+                        <div class="mb-4">
+                            <p class="mb-2"><i class="fas fa-envelope me-3"></i> <strong>Email:</strong></p>
+                            <p class="ms-4">info@pharmacyonline.com</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <form>
-                        <div class="mb-3">
-                            <input type="text" class="form-control" placeholder="Your Name" required>
-                        </div>
-                        <div class="mb-3">
-                            <input type="email" class="form-control" placeholder="Your Email" required>
-                        </div>
-                        <div class="mb-3">
-                            <textarea class="form-control" rows="3" placeholder="Your Message" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Send Message</button>
-                    </form>
+                <div class="col-md-7">
+                    <div class="p-4 border rounded-4 shadow-sm bg-white">
+                        <form>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Name</label>
+                                    <input type="text" class="form-control" placeholder="Your Name" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" placeholder="Your Email" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Subject</label>
+                                    <input type="text" class="form-control" placeholder="How can we help?" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Message</label>
+                                    <textarea class="form-control" rows="4" placeholder="Your Message" required></textarea>
+                                </div>
+                                <div class="col-12 mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm">Send Message</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2023 Pharmacy Online. All rights reserved. | Powered by Pharmacy Management System</p>
-        </div>
-    </footer>
-
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JS for Interactivity -->
-    
-</body>
-</html>
 {% endblock content %}

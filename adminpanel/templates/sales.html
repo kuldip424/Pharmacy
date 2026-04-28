@@ -6,26 +6,68 @@
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Sales Management</h1>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordSaleModal">
-            Record New Sale
-        </button>
+        <div>
+            <a href="{% url 'export_sales_csv' %}" class="btn btn-success me-2">
+                <i class="fas fa-file-csv"></i> Download Monthly CSV
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#recordSaleModal">
+                Record New Sale
+            </button>
+        </div>
     </div>
 
-    <!-- Sales Summary Cards -->
+    <!-- Sales Summary & Date Filter -->
     <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card text-white bg-success mb-3">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
-                    <h5 class="card-title">Today's Sales</h5>
-                    <p class="card-text" id="today-sales">Rs.{{today_sales}}</p>
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Today's Sales</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">Rs.{{today_sales|floatformat:2}}</div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card text-white bg-info mb-3">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
                 <div class="card-body">
-                    <h5 class="card-title">This Month's Sales</h5>
-                    <p class="card-text" id="month-sales">Rs.{{month_sales}}</p>
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Monthly Sales</div>
+                    <div class="h5 mb-0 font-weight-bold text-gray-800">Rs.{{month_sales|floatformat:2}}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6 col-md-12 mb-4">
+            <div class="card shadow h-100 py-2">
+                <div class="card-body">
+                    <form method="GET" class="row align-items-center">
+                        <div class="col-auto">
+                            <label class="small font-weight-bold">Filter by Date Range:</label>
+                        </div>
+                        <div class="col">
+                            <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request.GET.start_date }}">
+                        </div>
+                        <div class="col">
+                            <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request.GET.end_date }}">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+                            <a href="{% url 'sales' %}" class="btn btn-secondary btn-sm">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Selling Drugs Chart -->
+    <div class="row mb-4">
+        <div class="col-lg-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top 5 Selling Drugs (Current Month)</h6>
+                </div>
+                <div class="card-body">
+                    <div style="height: 200px;">
+                        <canvas id="topSellingChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -43,8 +85,10 @@
                         <th>Date</th>
                         <th>Customer</th>
                         <th>Drug</th>
+                        <th>Transaction ID</th>
                         
                         <th>Total Price</th>
+                        <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -61,23 +105,93 @@
                     <tr>
                         <td>{{i.datetime}}</td>
                         <td>{{i.name}}</td>
-                        <td>{% for j in cart_items %}
+                        <td>
+                            {% for j in cart_items %}
                                 {% if j.order_id == i.id %}
-                     
                                     {{ j.product.name }} (x{{ j.qty }}) <br>
-                                                       
                                 {% endif %}
                             {% endfor %}
                         </td>
-                        
+                        <td>{{ i.transaction|default:"N/A" }}</td>
                         <td>Rs.{{i.total_price}}</td>
-                        <td><button class="btn btn-danger btn-sm">Delete</button></td>
+                        <td>
+                            <span class="badge {% if i.status == 'DELIVERED' %}bg-success{% elif i.status == 'CANCELLED' %}bg-danger{% else %}bg-primary{% endif %}">{{ i.status }}</span><br>
+                            <span class="badge {% if i.payment_status == 'PAID' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ i.payment_status }}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateOrderModal{{i.id}}">
+                                Update
+                            </button>
+
+                            <div class="modal fade" id="updateOrderModal{{i.id}}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form action="{% url 'update_order' i.id %}" method="POST">
+                                            {% csrf_token %}
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Update Order #{{i.id}}</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3 text-start">
+                                                    <label class="form-label">Order Status</label>
+                                                    <select name="status" class="form-select">
+                                                        <option value="PLACED" {% if i.status == 'PLACED' %}selected{% endif %}>Placed</option>
+                                                        <option value="CONFIRMED" {% if i.status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+                                                        <option value="DISPATCHED" {% if i.status == 'DISPATCHED' %}selected{% endif %}>Dispatched</option>
+                                                        <option value="DELIVERED" {% if i.status == 'DELIVERED' %}selected{% endif %}>Delivered</option>
+                                                        <option value="CANCELLED" {% if i.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3 text-start">
+                                                    <label class="form-label">Payment Status</label>
+                                                    <select name="payment_status" class="form-select">
+                                                        <option value="PAID" {% if i.payment_status == 'PAID' %}selected{% endif %}>Paid</option>
+                                                        <option value="PENDING" {% if i.payment_status == 'PENDING' %}selected{% endif %}>Pending (Debtor)</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-primary">Save</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
-                          
-                         {% endfor %}
+{% endfor %}
                 </tbody>
             </table>
         </div>
+            
+            {% if order.has_other_pages %}
+            <div class="card-footer bg-white">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        {% if order.has_previous %}
+                            <li class="page-item"><a class="page-link px-4" href="?page={{ order.previous_page_number }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">Prev</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link px-4">Prev</span></li>
+                        {% endif %}
+
+                        {% for num in order.paginator.page_range %}
+                            {% if order.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% elif num > order.number|add:'-3' and num < order.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?page={{ num }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if order.has_next %}
+                            <li class="page-item"><a class="page-link px-4" href="?page={{ order.next_page_number }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">Next</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link px-4">Next</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
     </div>
 
 </div>
@@ -126,41 +240,54 @@
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button class="btn btn-primary" id="saveSaleBtn">Record Sale</button>
             </div>
+            </div>
         </div>
+    </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let sales = [];
-let customers = [];
-let drugs = [];
+    const ctx = document.getElementById('topSellingChart').getContext('2d');
+    const topSellingData = {
+        labels: [{% for item in top_selling %}"{{ item.product__name }}",{% endfor %}],
+        datasets: [{
+            label: 'Quantity Sold',
+            data: [{% for item in top_selling %}{{ item.total_qty }},{% endfor %}],
+            backgroundColor: [
+                'rgba(78, 115, 223, 0.5)',
+                'rgba(28, 200, 138, 0.5)',
+                'rgba(54, 185, 204, 0.5)',
+                'rgba(246, 194, 62, 0.5)',
+                'rgba(231, 74, 59, 0.5)'
+            ],
+            borderColor: [
+                'rgba(78, 115, 223, 1)',
+                'rgba(28, 200, 138, 1)',
+                'rgba(54, 185, 204, 1)',
+                'rgba(246, 194, 62, 1)',
+                'rgba(231, 74, 59, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
 
-
-
-function renderSalesTable() {
-    document.getElementById('salesTableBody').innerHTML = sales.map(s => `
-        <tr>
-            <td>${s.date}</td>
-            <td>${s.customer_name}</td>
-            <td>${s.drug_name}</td>
-            <td>${s.quantity_sold}</td>
-            <td>$${s.total_price}</td>
-            <td><button class="btn btn-danger btn-sm" onclick="deleteSale(${s.id})">Delete</button></td>
-        </tr>
-    `).join('');
-}
-
-function calculateSummaries() {
-    document.getElementById('today-sales').innerText = '$19.97';
-    document.getElementById('month-sales').innerText = '$19.97';
-}
-
-function deleteSale(id) {
-    sales = sales.filter(s => s.id !== id);
-    renderSalesTable();
-}
-
-loadSales();
+    new Chart(ctx, {
+        type: 'bar',
+        data: topSellingData,
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
 </script>
+
 
 {% endblock content %}

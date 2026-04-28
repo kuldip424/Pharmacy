@@ -1,32 +1,136 @@
- <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharmacy Online - Your Health, Our Priority</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #28a745;
+            --dark-color: #1a1a1a;
+            --light-bg: #f8f9fa;
+        }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--light-bg);
+            color: #333;
+        }
+        .navbar {
+            background-color: rgba(0, 123, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: -0.5px;
+        }
+        .nav-link {
+            font-weight: 500;
+            transition: all 0.3s;
+            margin: 0 5px;
+        }
+        .nav-link:hover {
+            color: #fff !important;
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+        .btn-custom {
+            border-radius: 50px;
+            padding: 8px 25px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .shadow-hover:hover {
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top p-3">
         <div class="container">
-            <a class="navbar-brand" href="customer-home.html"><i class="fas fa-pills"></i> Pharmacy Online</a>
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <i class="fas fa-hand-holding-medical me-2"></i>Pharmacy Online
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item"><a class="nav-link" href="{% url 'index' %}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'product' %}">Products</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#about">About Us</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'cart' %}"><i class="fas fa-shopping-cart"></i> Cart </a></li>
-                     
+                    <li class="nav-item"><a class="nav-link" href="{% url 'aboutus' %}">About Us</a></li>
+                    
+                    <li class="nav-item">
+                        <a class="nav-link position-relative px-3" href="{% url 'cart' %}">
+                            <i class="fas fa-shopping-basket fs-5"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm border border-2 border-white" style="font-size: 0.65rem;">
+                                {% if request.session.guest_cart %}{{ request.session.guest_cart|length }}{% else %}0{% endif %}
+                            </span>
+                        </a>
+                    </li>
+                    
                     {% if is_login %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'logout' %}">Logout</a></li> 
+                    <li class="nav-item ms-3">
+                        <div class="dropdown">
+                            <a class="btn btn-light btn-custom dropdown-toggle shadow-sm" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle me-2"></i> Account
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3 rounded-3">
+                                <li><a class="dropdown-item py-2" href="{% url 'history' %}"><i class="fas fa-history me-3 text-muted"></i>Order History</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item py-2 text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-3"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    </li>
                     {% else %}                       
-                    <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Signup</a></li>
-                     {% endif %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'history' %}">History</a></li>
-                   
-                        
+                    <li class="nav-item ms-3"><a class="btn btn-outline-light btn-custom me-2" href="{% url 'login' %}">Login</a></li>
+                    <li class="nav-item"><a class="btn btn-light btn-custom shadow-sm" href="{% url 'register' %}">Sign Up</a></li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
     </nav>
-    
-    {% block content %}
-        
-    {% endblock content %}
-        
+
+    <div class="container py-4">
+        {% block content %}
+        {% endblock content %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Global Footer -->
+    <footer class="mt-5 py-5 border-top bg-white px-2">
+        <div class="container text-center text-muted">
+            <div class="row g-4 mb-4 text-start">
+                <div class="col-md-4">
+                    <h5 class="fw-bold text-dark mb-3">Pharmacy Online</h5>
+                    <p class="small text-muted">Your trusted digital pharmacy since 2023. Fast delivery, certified care.</p>
+                </div>
+                <div class="col-md-4 text-center">
+                    <h5 class="fw-bold text-dark mb-3">Quick Links</h5>
+                    <ul class="list-unstyled small">
+                        <li><a href="{% url 'index' %}" class="text-decoration-none text-muted">Home</a></li>
+                        <li><a href="{% url 'product' %}" class="text-decoration-none text-muted">Our Products</a></li>
+                        <li><a href="{% url 'aboutus' %}" class="text-decoration-none text-muted">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 text-end">
+                    <h5 class="fw-bold text-dark mb-3">Support</h5>
+                    <p class="small mb-1"><i class="fas fa-phone-alt me-2 text-primary"></i> (123) 456-7890</p>
+                    <p class="small mb-0"><i class="fas fa-envelope me-2 text-primary"></i> care@pharmacy.com</p>
+                </div>
+            </div>
+            <p class="mb-0 small border-top pt-4">&copy; 2023 Pharmacy Online. Guaranteed Health & Care.</p>
+        </div>
+    </footer>
+</body>
+</html>
