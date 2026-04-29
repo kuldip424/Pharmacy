@@ -5,6 +5,10 @@ from django.core.mail import send_mail
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from django.core.paginator import Paginator
+import razorpay
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponseBadRequest
 # Create your views here.
 def indexView(request):
     is_login = 'login' in request.session
@@ -430,63 +434,101 @@ def checkoutView(request):
         return redirect('login')
 
 
+from django.urls import reverse
 import razorpay
 from django.conf import settings
-from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import render, redirect
 from django.http import HttpResponseBadRequest
-client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
-
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib import messages
 from django.urls import reverse
 
-def payment(request): 
+def payment(request):
     try:
         amount = request.session.get('amount')
+
         if not amount:
-             messages.error(request, "Invalid payment amount.")
-             return redirect('checkout')
-             
+            messages.error(request, "Invalid payment amount.")
+            return redirect('checkout')
+
         currency = 'INR'
         amount_paise = int(float(amount) * 100)
-        
-        razorpay_order = client.order.create(
-            dict(amount=amount_paise, currency=currency, payment_capture=1)
+
+        client = razorpay.Client(
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
         )
-        razorpay_order_id = razorpay_order['id']
-        callback_url = request.build_absolute_uri(reverse('payment_handler'))
+
+        print(f"DEBUG: Creating Razorpay Order - Amount: {amount_paise}, Currency: {currency}")
         
+        razorpay_order = client.order.create({
+            'amount': amount_paise,
+            'currency': currency,
+            'payment_capture': 1
+        })
+
+        razorpay_order_id = razorpay_order['id']
+        print(f"DEBUG: Razorpay Order Created: {razorpay_order_id}")
+        request.session['razorpay_order_id'] = razorpay_order_id
+
+        callback_url = request.build_absolute_uri(reverse('payment_handler'))
+
         context = {
             'razorpay_merchant_key': settings.RAZORPAY_KEY_ID,
             'razorpay_amount': amount_paise,
             'razorpay_order_id': razorpay_order_id,
             'callback_url': callback_url,
-            'currency': currency
+            'currency': currency,
+            'is_login': True
         }
+
         return render(request, 'payment.html', context)
+
     except Exception as e:
-        messages.error(request, f"Payment initialization failed: {str(e)}")
+        print("ERROR IN PAYMENT:", e)
+        messages.error(request, f"Payment failed to initialize: {str(e)}")
         return redirect('checkout')
+
 
 @csrf_exempt
 def payment_handler(request):
-    if request.method != 'POST':
+    if request.method != "POST":
         return HttpResponseBadRequest("Only POST allowed")
 
     try:
-        payment_id = request.POST.get('razorpay_payment_id', '')
-        razorpay_order_id = request.POST.get('razorpay_order_id', '')
-        signature = request.POST.get('razorpay_signature', '')
-        
+        payment_id = request.POST.get('razorpay_payment_id')
+        razorpay_order_id = request.POST.get('razorpay_order_id')
+        signature = request.POST.get('razorpay_signature')
+
+        if not all([payment_id, razorpay_order_id, signature]):
+            messages.error(request, "Payment data missing.")
+            return redirect('checkout')
+
+        # Verify Signature
+        client = razorpay.Client(
+            auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET)
+        )
+
         params_dict = {
             'razorpay_order_id': razorpay_order_id,
             'razorpay_payment_id': payment_id,
             'razorpay_signature': signature
         }
-        
-        # Verify signature
+
         client.utility.verify_payment_signature(params_dict)
-        
-        # Get order details from session
+
+        # Retrieve session data
+        email = request.session.get('login')
+        if not email:
+            messages.error(request, "Session expired. Please login again.")
+            return redirect('login')
+
+        user = RegistrationModel.objects.get(email=email)
+        cart = CartModel.objects.filter(user=user, order_id=0)
+
+        if not cart.exists():
+            messages.error(request, "Your cart is empty.")
+            return redirect('cart')
+
         name = request.session.get('name')
         mobile = request.session.get('mobile')
         address = request.session.get('address')
@@ -494,15 +536,12 @@ def payment_handler(request):
         state = request.session.get('state')
         zipcode = request.session.get('zipcode')
         amount = request.session.get('amount')
-        email = request.session.get('login')
 
-        if not email:
-            return HttpResponseBadRequest("User session expired")
+        if not all([name, mobile, address, city, state, zipcode]):
+            messages.error(request, "Missing delivery information.")
+            return redirect('checkout')
 
-        user = RegistrationModel.objects.get(email=email)
-        cart = CartModel.objects.filter(user=user, order_id=0)
-
-        # Create the Order
+        # Create Order
         order = OrderModel.objects.create(
             user=user,
             total_price=amount,
@@ -518,7 +557,7 @@ def payment_handler(request):
             transaction=payment_id
         )
 
-        # Create Order Items and clear cart
+        # Create Order Items
         for item in cart:
             orderItemModel.objects.create(
                 order=order,
@@ -526,19 +565,23 @@ def payment_handler(request):
                 qty=item.qty,
                 price=item.total_price
             )
+
+        # Clear cart
         cart.delete()
-        
-        # Cleanup session
-        for key in ['name', 'mobile', 'address', 'city', 'state', 'zipcode', 'amount']:
+
+        # Clear session payment data
+        keys_to_clear = ['name', 'mobile', 'address', 'city', 'state', 'zipcode', 'amount', 'razorpay_order_id']
+        for key in keys_to_clear:
             request.session.pop(key, None)
 
+        messages.success(request, "Payment successful! Your order has been placed.")
         return redirect('confirm', id=order.id)
-        
+
     except Exception as e:
-        print(f"Razorpay Payment Error: {str(e)}")
-        messages.error(request, f"Payment Verification Failed: {str(e)}")
+        print("PAYMENT ERROR:", e)
+        messages.error(request, f"Payment verification failed: {str(e)}")
         return redirect('checkout')
-        
+
 def orderHistory(request):
     if 'login' in request.session:
         user = RegistrationModel.objects.get(email = request.session['login'])

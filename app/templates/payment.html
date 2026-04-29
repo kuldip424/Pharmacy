@@ -3,49 +3,79 @@
 {% block content %}
 <div class="row justify-content-center py-5">
     <div class="col-md-6 text-center">
-        <div class="card border-0 shadow-lg p-5 rounded-4 bg-white animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;">
-            <div class="mb-4">
-                <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-            </div>
-            <h3 class="fw-bold text-dark mb-3">Initializing Secure Payment</h3>
-            <p class="text-muted mb-4">Please wait while we connect to Razorpay. Do not refresh or close this page.</p>
+        <div class="card border-0 shadow-lg p-5 rounded-4 bg-white">
             
-            <div class="d-flex justify-content-center gap-2 mb-4">
-                <i class="fab fa-cc-visa text-muted fs-2"></i>
-                <i class="fab fa-cc-mastercard text-muted fs-2"></i>
-                <i class="fas fa-mobile-alt text-muted fs-2"></i>
-                <i class="fas fa-university text-muted fs-2"></i>
-            </div>
-            
+            <h3 class="fw-bold text-dark mb-3">Secure Payment</h3>
+            <p class="text-muted mb-4">
+                Click below to proceed with Razorpay payment
+            </p>
+
+            <!-- Hidden CSRF form (IMPORTANT) -->
+            <form id="csrf-form" style="display:none;">
+                {% csrf_token %}
+            </form>
+
             <button id="rzp-button" class="btn btn-primary btn-lg rounded-pill px-5 py-3 fw-bold shadow">
-                Open Payment Modal <i class="fas fa-external-link-alt ms-2"></i>
+                Pay Now
             </button>
         </div>
     </div>
 </div>
 
+<!-- Razorpay Script -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <script>
     var options = {
         "key": "{{ razorpay_merchant_key }}",
-        "amount": "{{ razorpay_amount }}",
+        "amount": {{ razorpay_amount }}, // Pass as number
         "currency": "{{ currency }}",
-        "name": "Pharmacy Online",
-        "description": "Medicine Purchase",
+        "name": "Pharmacy Management System",
+        "description": "Order Payment",
         "order_id": "{{ razorpay_order_id }}",
+        "retry": {
+            "enabled": true
+        },
+        "config": {
+            "display": {
+                "blocks": {
+                    "banks": {
+                        "name": "Recommended Methods",
+                        "instruments": [
+                            {
+                                "method": "upi"
+                            },
+                            {
+                                "method": "card"
+                            },
+                            {
+                                "method": "netbanking"
+                            }
+                        ]
+                    }
+                },
+                "sequence": ["block.banks"],
+                "preferences": {
+                    "show_default_blocks": true
+                }
+            }
+        },
         "handler": function (response){
-            // Use a hidden form to submit the response to our backend
+            console.log("Payment successful, received response:", response);
+            
+            // Get CSRF token
+            var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+            // Create a form to post to the handler
             var form = document.createElement("form");
             form.method = "POST";
             form.action = "{% url 'payment_handler' %}";
-            
+
             var fields = {
                 'razorpay_payment_id': response.razorpay_payment_id,
                 'razorpay_order_id': response.razorpay_order_id,
                 'razorpay_signature': response.razorpay_signature,
-                'csrfmiddlewaretoken': '{{ csrf_token }}'
+                'csrfmiddlewaretoken': csrfToken
             };
 
             for (var key in fields) {
@@ -57,46 +87,45 @@
             }
 
             document.body.appendChild(form);
+            console.log("Submitting payment verification form...");
             form.submit();
         },
         "prefill": {
-            "name": "{{ request.session.name|default:'Guest' }}",
-            "email": "{{ request.session.login|default:'test@example.com' }}",
-            "contact": "{{ request.session.mobile|default:'9999999999' }}"
+            "name": "{{ request.session.name|default:'' }}",
+            "email": "{{ request.session.login|default:'' }}"
         },
         "theme": {
-            "color": "#007bff"
+            "color": "#28a745"
         },
         "modal": {
             "ondismiss": function(){
-                window.location.href = "{% url 'checkout' %}";
+                console.log("Payment window closed by user");
             }
         }
     };
-    
-    console.log("Razorpay Options:", options);
-    
-    var rzp = new Razorpay(options);
-    
-    // Auto-open modal
+
+    console.log("Initializing Razorpay with options:", {
+        key: options.key,
+        amount: options.amount,
+        order_id: options.order_id
+    });
+
+    var rzp1 = new Razorpay(options);
+
+    rzp1.on('payment.failed', function (response){
+        console.error("Payment failed:", response.error);
+        alert("Payment Failed: " + response.error.description);
+    });
+
     window.onload = function() {
-        rzp.open();
+        console.log("Auto-opening Razorpay checkout...");
+        rzp1.open();
     };
 
     document.getElementById('rzp-button').onclick = function(e){
-        rzp.open();
+        rzp1.open();
         e.preventDefault();
     }
 </script>
 
-<style>
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.02); }
-        100% { transform: scale(1); }
-    }
-    .animate__pulse {
-        animation: pulse 2s infinite;
-    }
-</style>
 {% endblock content %}
