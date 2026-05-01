@@ -1,3 +1,3 @@
-web: python manage.py makemigrations --noinput && python manage.py migrate --noinput && gunicorn pharmacy.wsgi --log-file -
+web: bash start.sh
 
 
