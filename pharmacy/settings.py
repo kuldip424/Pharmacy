@@ -96,6 +96,11 @@ DATABASES = {
     )
 }
 
+# If DATABASE_URL is not set, ensure we have a valid default engine
+if not DATABASES['default']:
+    DATABASES['default'] = dj_database_url.parse(f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
